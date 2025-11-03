@@ -1,0 +1,49 @@
+{
+    "rooms": [
+        {
+            "id": "studio",
+            "points": [[0,0],[5,0],[5,4],[0,4]],
+            "floorMaterial": "wood",
+            "floorHeight": 0.1
+        }
+    ],
+    "walls": [
+        {
+            "id": "w1",
+            "start": [0,0],
+            "end": [5,0],
+            "thickness": 0.2,
+            "height": 3
+        },
+        {
+            "id": "w2",
+            "start": [5,0],
+            "end": [5,-4],
+            "thickness": 0.2,
+            "height": 3
+        },
+        {
+            "id": "w3",
+            "start": [5,-4],
+            "end": [0,-4],
+            "thickness": 0.2,
+            "height": 3
+        },
+        {
+            "id": "w4",
+            "start": [0,-4],
+            "end": [0,0],
+            "thickness": 0.2,
+            "height": 3
+        }
+    ],
+    "furniture": [
+        {
+            "id": "sofa1",
+            "kind": "sofa",
+            "position": [1.2, 0.4, 3.2],
+            "size": [1.8, 0.8, 0.8]
+        }
+    ]
+}
+  

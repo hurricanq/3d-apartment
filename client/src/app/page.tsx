@@ -1,5 +1,5 @@
 import React from 'react'
-import Room3dInterior from '@/components/Room3dInterior'
+import Room3dInterior from '@/components/RoomThree'
 
 const HomePage = () => {
   return (

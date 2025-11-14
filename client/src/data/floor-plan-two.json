@@ -1,0 +1,129 @@
+{
+    "rooms": [
+        {
+            "id": "r1",
+            "name": "Studio",
+            "dimensions": {
+                "width": 10.0,
+                "height": 10.0,
+                "depth": 0.1
+            },
+            "position": [
+                0.0,
+                -0.5,
+                0.0
+            ],
+            "floor": {
+                "material": "wood",
+                "color": "#8B4513"
+            },
+            "walls": [
+                {
+                    "id": "fw1",
+                    "dimensions": {
+                        "width": 10.0,
+                        "height": 5.0,
+                        "depth": 0.1
+                    },
+                    "position": [
+                        0.0,
+                        2.5,
+                        5.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        3.14159265359,
+                        0.0
+                    ],
+                    "material": "plastic",
+                    "color": "#FFFFFF"
+                },
+                {
+                    "id": "bw1",
+                    "dimensions": {
+                        "width": 10.0,
+                        "height": 5.0,
+                        "depth": 0.1
+                    },
+                    "position": [
+                        0.0,
+                        2.5,
+                        -5.0
+                    ],
+                    "material": "plastic",
+                    "color": "#FFFFFF"
+                },
+                {
+                    "id": "lw1",
+                    "dimensions": {
+                        "width": 10.0,
+                        "height": 5.0,
+                        "depth": 0.1
+                    },
+                    "position": [
+                        -5.0,
+                        2.5,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        1.57079632679,
+                        0.0
+                    ],
+                    "material": "plastic",
+                    "color": "#FFFFFF"
+                },
+                {
+                    "id": "rw1",
+                    "dimensions": {
+                        "width": 10.0,
+                        "height": 5.0,
+                        "depth": 0.1
+                    },
+                    "position": [
+                        5.0,
+                        2.5,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        -1.57079632679,
+                        0.0
+                    ],
+                    "material": "plastic",
+                    "color": "#FFFFFF"
+                }
+            ],
+            "furniture": [
+                {
+                    "id": "bonsai-tree",
+                    "name": "Bonsai Tree",
+                    "model": "/models/bonsai_tree.glb",
+                    "position": [
+                        3.0,
+                        0.0,
+                        0.0
+                    ],
+                    "scale": [2.0, 2.0, 2.0],
+                    "rotation": [0, 0, 0],
+                    "material": "fabric",
+                    "color": "#4169E1"
+                },
+                {
+                    "id": "bed",
+                    "name": "Bed",
+                    "model": "/models/bed.glb",
+                    "position": [
+                        -3.0,
+                        0.0,
+                        0.0
+                    ],
+                    "scale": [5.0, 5.0, 5.0],
+                    "rotation": [0, 0, 0],
+                    "material": "fabric",
+                    "color": "#4169E1"
+                }
+            ]
+        }
+    ]
+}

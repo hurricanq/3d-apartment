@@ -9,12 +9,12 @@ const Scene = dynamic(() => import("./Scene"), {
 });
 */
 
-import SceneRtf from './SceneRtf';
+import Room from './ApartmentThree';
 
 const DesignsPage = () => {
     return (
         <div>
-            <SceneRtf />
+            <Room />
         </div>
     )
 }

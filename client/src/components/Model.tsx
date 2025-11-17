@@ -12,6 +12,13 @@ interface ModelProps {
 
 const Model = forwardRef<THREE.Group, ModelProps>(({ url, onClick, ...props }, ref) => {
     const { scene } = useGLTF(url);
+
+    scene.traverse((obj: any) => {
+        if (obj.isMesh) {
+            obj.castShadow = true;
+        }
+    });
+
     return <primitive ref={ref} object={scene} onPointerDown={onClick} {...props} />;
 });
 

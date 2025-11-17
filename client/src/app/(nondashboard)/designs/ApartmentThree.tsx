@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, TransformControls, useTexture, PointerLockControls } from '@react-three/drei';  // Added Box and Plane for walls/floor
 import * as THREE from 'three';
+
 import Model from '@/components/Model';
 import FPSCamera from '@/components/FPSCamera';
 import floorPlan from "@/data/floor-plan-two.json";
@@ -15,15 +16,8 @@ interface ModelData {
     rotation?: [number, number, number];
 }
 
-interface WallData {
-    id: string;
-    position: [number, number, number];
-    dimensions: { width: number; height: number; depth: number };
-    color: string;  // Dynamic color
-}
-
 function Floor({ width, height }: { width: number; height: number }) {
-    const woodTexture = useTexture("/textures/wood.jpg");
+    const woodTexture = useTexture("/textures/dark-wood.jpg");
     woodTexture.wrapS = woodTexture.wrapT = THREE.RepeatWrapping;
     woodTexture.repeat.set(10, 10);
 
@@ -39,17 +33,29 @@ function Floor({ width, height }: { width: number; height: number }) {
     );
 }
 
+function ImagePlane({ url, width, height, position, rotation }: { url: string; width: number; height: number, position: [number, number, number]; rotation: [number, number, number] }) {
+    const texture = useTexture(url);
+
+    return (
+        <mesh position={position} rotation={rotation}>
+            <planeGeometry args={[width, height]} />
+            <meshStandardMaterial map={texture} />
+        </mesh>
+    );
+}
+
 export default function ApartmentThree() {
     const [models, setModels] = useState<ModelData[]>([]);
     const [selected, setSelected] = useState<number | null>(null);  // For furniture
     const [selectedWall, setSelectedWall] = useState<string | null>(null);  // For walls
     const [wallColors, setWallColors] = useState<Record<string, string>>({});  // Map wall ID to color
     const [showColorPicker, setShowColorPicker] = useState(false);  // Toggle color list
-    const [mode, setMode] = useState<'translate' | 'rotate' | 'scale'>('translate');
     const transformRef = useRef<any>(null);
     const modelRefs = useRef(new Map<number, React.RefObject<THREE.Group | null>>());
 
-    const [cameraMode, setCameraMode] = useState<"orbit" | "fps">("orbit");
+    const [mode, setMode] = useState<'translate' | 'rotate' | 'scale'>('translate'); // Toggle model manipulation
+    const [cameraMode, setCameraMode] = useState<"orbit" | "fps">("orbit"); // Toggle camera mode
+    const [dayNightMode, setDayNightMode] = useState<"day" | "night">("day"); // Toggle day/night (ambient and directional lighting)
 
     // Predefined color options
     const colorOptions = [
@@ -163,9 +169,9 @@ export default function ApartmentThree() {
 
     // Clamp position
     const clampPosition = (object: THREE.Object3D): void => {
-        object.position.y = Math.max(0, object.position.y);
-        object.position.x = Math.max(-5, Math.min(5, object.position.x));
-        object.position.z = Math.max(-5, Math.min(5, object.position.z));
+        object.position.x = Math.max(-3, Math.min(3, object.position.x));
+        object.position.y = Math.max(0, Math.min(2, object.position.y));
+        object.position.z = Math.max(-3, Math.min(3, object.position.z));
     };
 
     return (
@@ -175,8 +181,18 @@ export default function ApartmentThree() {
                 onPointerMissed={handleDeselect}
                 shadows
             >
-                <ambientLight intensity={1} />
-                <directionalLight color="white" position={[1, 1, 0]} />
+                <color attach="background" args={[dayNightMode === "day" ? "#FFFFFF" :"#111111"]} /> 
+
+                {/* Lighting (day/night) */}
+                {dayNightMode === "day" && (
+                    <group>
+                        <ambientLight intensity={1} />
+                        <directionalLight color="white" position={[1, 1, 0]} castShadow shadow-mapSize-width={2048} shadow-mapSize-height={2048} />
+                    </group>
+                )}
+                {dayNightMode === "night" && (
+                    <pointLight position={[0, 2, 0]} intensity={10} color="#fff" castShadow/>
+                )}
 
                 {/* Old OrbitControls
                 <OrbitControls enabled={!selected && !selectedWall} />
@@ -188,7 +204,10 @@ export default function ApartmentThree() {
                 {floorPlan.rooms.map((room) => (
                     <group key={room.id}>
                         {/* Floor */}
-                        <Floor width={room.dimensions.width} height={room.dimensions.height} />
+                        <Floor
+                            width={room.dimensions.width}
+                            height={room.dimensions.height}
+                        />
             
                         {/* Walls */}
                         {room.walls.map((wall) => (
@@ -197,10 +216,34 @@ export default function ApartmentThree() {
                                 position={[wall.position[0], wall.position[1], wall.position[2]]}
                                 rotation={(wall.rotation ?? [0, 0, 0]) as [number, number, number]}
                                 onClick={() => handleWallSelect(wall.id)}
+                                receiveShadow
+                                castShadow={false}
                             >
                                 <planeGeometry args={[wall.dimensions.width, wall.dimensions.height]} />
                                 <meshStandardMaterial color={wallColors[wall.id] || wall.color} />
                             </mesh>
+                        ))}
+
+                        {/* Ceiling */}
+                        <mesh
+                            position={[room.ceiling.position[0], room.ceiling.position[1], room.ceiling.position[2]]}
+                            rotation={[room.ceiling.rotation[0], room.ceiling.rotation[1], room.ceiling.rotation[2]]}
+                            receiveShadow
+                        >
+                            <planeGeometry args={[room.ceiling.dimensions.width, room.ceiling.dimensions.height]} />
+                            <meshStandardMaterial color={room.ceiling.color} />
+                        </mesh>
+
+                        {/* Posters */}
+                        {room.images.map((image) => (
+                            <ImagePlane
+                                key={image.id}
+                                url={image.url}
+                                width={image.dimensions.width}
+                                height={image.dimensions.height}
+                                position={[image.position[0], image.position[1], image.position[2]]}
+                                rotation={[image.rotation[0], image.rotation[1], image.rotation[2]]}
+                            />
                         ))}
                     </group>
                 ))}
@@ -260,6 +303,14 @@ export default function ApartmentThree() {
                     className="px-3 py-1 rounded bg-white shadow"
                 >
                     Toggle: {cameraMode === "orbit" ? "FPS Walk" : "Orbit Look"}
+                </button>
+
+                {/* Toggle day/night mode */}
+                <button
+                    onClick={() => setDayNightMode(dayNightMode === "day" ? "night" : "day")}
+                    className="px-3 py-1 rounded bg-white shadow"
+                >
+                    Toggle: {dayNightMode === "day" ? "Night Mode" : "Day Mode"}
                 </button>
 
                 {selected && (

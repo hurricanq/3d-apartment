@@ -14,9 +14,9 @@ export const getAllFurniture = async (req: Request, res: Response): Promise<void
 
 export const createFurniture = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { name, thumbnailUrl, modelUrl } = req.body;
+        const { id, name, thumbnailUrl, modelUrl } = req.body;
         const newFurniture = await prisma.furniture.create({
-            data: { name, thumbnailUrl, modelUrl },
+            data: { id, name, thumbnailUrl, modelUrl },
         });
         res.status(201).json(newFurniture);
     } catch (error: any) {

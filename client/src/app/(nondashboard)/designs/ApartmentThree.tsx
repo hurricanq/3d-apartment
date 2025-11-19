@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import Model from '@/components/Model';
 import FPSCamera from '@/components/FPSCamera';
 import floorPlan from "@/data/floor-plan-two.json";
+import FurnitureList from '@/components/FurnitureList';
 
 interface ModelData {
     id: number;
@@ -92,13 +93,13 @@ export default function ApartmentThree() {
     }, []);
 
     // Add a new model (WIP)
-    const addModel = (): void => {
+    const addModel = (modelUrl: string): void => {
         const id = Date.now();
         const modelRef = React.createRef<THREE.Group>();
         modelRefs.current.set(id, modelRef);
         const newModel: ModelData = {
             id,
-            url: '/models/bonsai_tree.glb',
+            url: `/models/${modelUrl}`,
             position: [0, 0, 0],
             scale: [1, 1, 1],
             rotation: [0, 0, 0],
@@ -291,63 +292,68 @@ export default function ApartmentThree() {
             </Canvas>
 
             {/* UI Buttons */}
-            <div className="absolute top-5 left-5 z-10 flex gap-2">
-                <button className="px-3 py-1 rounded bg-white shadow" onClick={addModel}>Add Furniture</button>
-                <button className="px-3 py-1 rounded bg-white shadow" onClick={removeModel} disabled={!selected}>
-                    Remove Selected
-                </button>
+            <div className="absolute top-5 left-5 z-10 flex flex-col gap-2">
+                <div className="flex gap-2">
+                    {/* Add furniture */}
+                    <FurnitureList onClick={addModel} />
 
-                {/* Toggle camera mode */}
-                <button
-                    onClick={() => setCameraMode(cameraMode === "orbit" ? "fps" : "orbit")}
-                    className="px-3 py-1 rounded bg-white shadow"
-                >
-                    Toggle: {cameraMode === "orbit" ? "FPS Walk" : "Orbit Look"}
-                </button>
+                    {/* Wall color change UI */}
+                    {selectedWall && (
+                        <div className="flex gap-2">
+                            <button
+                                className="px-3 py-1 rounded bg-white shadow"
+                                onClick={() => setShowColorPicker(!showColorPicker)}
+                            >
+                                Change Color
+                            </button>
+                            {showColorPicker && (
+                                <div className="flex gap-1">
+                                    {colorOptions.map((color) => (
+                                        <button
+                                            key={color.value}
+                                            className="px-3 py-1 rounded border"
+                                            style={{ backgroundColor: color.value }}
+                                            onClick={() => changeWallColor(color.value)}
+                                            title={color.name}
+                                        >
+                                            {/* Optional: Add color name text if needed */}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
 
-                {/* Toggle day/night mode */}
-                <button
-                    onClick={() => setDayNightMode(dayNightMode === "day" ? "night" : "day")}
-                    className="px-3 py-1 rounded bg-white shadow"
-                >
-                    Toggle: {dayNightMode === "day" ? "Night Mode" : "Day Mode"}
-                </button>
+                <div className="flex gap-2">
+                    {/* Toggle camera mode */}
+                    <button
+                        onClick={() => setCameraMode(cameraMode === "orbit" ? "fps" : "orbit")}
+                        className="px-3 py-1 rounded bg-white shadow"
+                    >
+                        {cameraMode === "orbit" ? "FPS Walk" : "Orbit Look"}
+                    </button>
 
-                {selected && (
-                    <div className="flex gap-2">
-                        <button className="px-3 py-1 rounded bg-white shadow" onClick={() => setMode('translate')}>Translate</button>
-                        <button className="px-3 py-1 rounded bg-white shadow" onClick={() => setMode('rotate')}>Rotate</button>
-                        <button className="px-3 py-1 rounded bg-white shadow" onClick={() => setMode('scale')}>Scale</button>
-                        <button className="px-3 py-1 rounded bg-white shadow" onClick={duplicateModel}>Duplicate</button>
-                    </div>
-                )}
+                    {/* Toggle day/night mode */}
+                    <button
+                        onClick={() => setDayNightMode(dayNightMode === "day" ? "night" : "day")}
+                        className="px-3 py-1 rounded bg-white shadow"
+                    >
+                        {dayNightMode === "day" ? "Night Mode" : "Day Mode"}
+                    </button>
+                </div>
 
-                {/* Wall color change UI */}
-                {selectedWall && (
-                    <div className="flex gap-2">
-                        <button
-                            className="px-3 py-1 rounded bg-white shadow"
-                            onClick={() => setShowColorPicker(!showColorPicker)}
-                        >
-                            Change Color
-                        </button>
-                        {showColorPicker && (
-                            <div className="flex gap-1">
-                                {colorOptions.map((color) => (
-                                    <button
-                                        key={color.value}
-                                        className="px-3 py-1 rounded border"
-                                        style={{ backgroundColor: color.value }}
-                                        onClick={() => changeWallColor(color.value)}
-                                        title={color.name}
-                                    >
-                                        {/* Optional: Add color name text if needed */}
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                )}
+                <div className="flex gap-2">
+                    {selected && (
+                        <div className="flex gap-2">
+                            <button className="px-3 py-1 rounded bg-white shadow" onClick={() => setMode('translate')}>Translate</button>
+                            <button className="px-3 py-1 rounded bg-white shadow" onClick={() => setMode('rotate')}>Rotate</button>
+                            <button className="px-3 py-1 rounded bg-white shadow" onClick={() => setMode('scale')}>Scale</button>
+                            <button className="px-3 py-1 rounded bg-white shadow" onClick={duplicateModel}>Duplicate</button>
+                            <button className="px-3 py-1 rounded bg-red-400 text-white shadow" onClick={removeModel} disabled={!selected}>Remove</button>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );

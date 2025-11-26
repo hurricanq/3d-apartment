@@ -13,6 +13,36 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  clerkId   String   @unique // Links to Clerk's user ID
+  username  String
+  email     String   @unique
+  designs   Design[] // One-to-many relation with Design
+}
+
+model Design {
+  id        Int   @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  name      String
+  data      Json
+  userId    String     // Foreign key to User
+  user      User     @relation(fields: [userId], references: [clerkId], onDelete: Cascade)
+}
+
+model Template {
+  id        Int   @id @default(autoincrement())
+  createdAt DateTime @default(now())
+
+  name      String
+  data      Json
+}
+
 model Furniture {
   id        String @id @default(uuid())
   createdAt DateTime @default(now())

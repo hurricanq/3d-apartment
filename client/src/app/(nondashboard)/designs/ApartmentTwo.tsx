@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import RoomTwo from '@/components/RoomTwo';
 import Model from '@/components/Model';  // Assuming this is updated to support scale/rotation
 
-import floorPlan from "@/data/floor-plan-two.json";
+import floorPlan from "@/data/floor-plan.json";
 
 interface ModelData {
     id: number;

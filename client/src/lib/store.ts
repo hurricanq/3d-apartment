@@ -1,9 +1,14 @@
 import { configureStore } from "@reduxjs/toolkit";
+
+import templateReducer from "./features/template/templateSlice";
+import designReducer from "./features/design/designSlice";
 import furnitureReducer from "./features/furniture/furnitureSlice";
 
 export const store = configureStore({
     reducer: {
-        furniture: furnitureReducer,
+        templates: templateReducer,
+        designs: designReducer,
+        furniture: furnitureReducer
     },
 });
 

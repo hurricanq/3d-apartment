@@ -3,11 +3,13 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, TransformControls, useTexture, PointerLockControls } from '@react-three/drei';  // Added Box and Plane for walls/floor
 import * as THREE from 'three';
+import { SignedIn, SignedOut, RedirectToSignIn } from '@clerk/nextjs';
 
-import Model from '@/components/Model';
+import Model from '@/components/Model3';
 import FPSCamera from '@/components/FPSCamera';
-import floorPlan from "@/data/floor-plan-two.json";
+import floorPlan from "@/data/floor-plan.json";
 import FurnitureList from '@/components/FurnitureList';
+import { NAVBAR_HEIGHT } from '@/lib/constants';
 
 interface ModelData {
     id: number;
@@ -48,25 +50,13 @@ function ImagePlane({ url, width, height, position, rotation }: { url: string; w
 export default function ApartmentThree() {
     const [models, setModels] = useState<ModelData[]>([]);
     const [selected, setSelected] = useState<number | null>(null);  // For furniture
-    const [selectedWall, setSelectedWall] = useState<string | null>(null);  // For walls
     const [wallColors, setWallColors] = useState<Record<string, string>>({});  // Map wall ID to color
-    const [showColorPicker, setShowColorPicker] = useState(false);  // Toggle color list
     const transformRef = useRef<any>(null);
     const modelRefs = useRef(new Map<number, React.RefObject<THREE.Group | null>>());
 
     const [mode, setMode] = useState<'translate' | 'rotate' | 'scale'>('translate'); // Toggle model manipulation
     const [cameraMode, setCameraMode] = useState<"orbit" | "fps">("orbit"); // Toggle camera mode
     const [dayNightMode, setDayNightMode] = useState<"day" | "night">("day"); // Toggle day/night (ambient and directional lighting)
-
-    // Predefined color options
-    const colorOptions = [
-        { name: 'White', value: '#FFFFFF' },
-        { name: 'Red', value: '#FF0000' },
-        { name: 'Blue', value: '#0000FF' },
-        { name: 'Green', value: '#00FF00' },
-        { name: 'Yellow', value: '#FFFF00' },
-        { name: 'Gray', value: '#808080' },
-    ];
 
     // Load furniture and initialize wall colors from JSON on mount
     useEffect(() => {
@@ -92,7 +82,7 @@ export default function ApartmentThree() {
         setWallColors(initialWallColors);
     }, []);
 
-    // Add a new model (WIP)
+    // Add a new model
     const addModel = (modelUrl: string): void => {
         const id = Date.now();
         const modelRef = React.createRef<THREE.Group>();
@@ -116,7 +106,7 @@ export default function ApartmentThree() {
         }
     };
 
-    // Duplicate the selected model (WIP)
+    // Duplicate the selected model
     const duplicateModel = (): void => {
         if (selected) {
             const original = models.find((m) => m.id === selected);
@@ -140,32 +130,14 @@ export default function ApartmentThree() {
         }
     };
 
-    // Handle wall selection
-    const handleWallSelect = (wallId: string): void => {
-        setSelectedWall(wallId);
-        setSelected(null);  // Deselect furniture
-        setShowColorPicker(false);  // Hide color picker on new selection
-    };
-
-    // Handle color change
-    const changeWallColor = (color: string): void => {
-        if (selectedWall) {
-            setWallColors((prev) => ({ ...prev, [selectedWall]: color }));
-            setShowColorPicker(false);  // Hide after selection
-        }
-    };
-
     // Handle model selection
     const handleSelect = (id: number): void => {
         setSelected(id);
-        setSelectedWall(null);  // Deselect walls
     };
 
     // Handle deselection by clicking outside
     const handleDeselect = (): void => {
         setSelected(null);
-        setSelectedWall(null);
-        setShowColorPicker(false);
     };
 
     // Clamp position
@@ -175,8 +147,53 @@ export default function ApartmentThree() {
         object.position.z = Math.max(-3, Math.min(3, object.position.z));
     };
 
+    const saveDesign = async () => {
+        // Ensure we capture the *current* position/rotation from modelRefs (not only initial state)
+        const furniture = models.map(m => {
+            const ref = modelRefs.current.get(m.id)?.current;
+            return {
+                id: m.id,
+                url: m.url,
+                position: ref ? [
+                    ref.position.x,
+                    ref.position.y,
+                    ref.position.z
+                ] : m.position,
+                rotation: ref ? [
+                    ref.rotation.x,
+                    ref.rotation.y,
+                    ref.rotation.z
+                ] : m.rotation,
+                scale: m.scale
+            };
+        });
+
+        const design = {
+            furniture,
+            walls: wallColors,
+            settings: {
+                cameraMode,
+                dayNightMode
+            }
+        };
+
+        console.log("Saved design:", design);
+
+        // TODO: send to backend
+        await fetch("/designs", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(design)
+        });
+    };
+
     return (
-        <div className="relative h-screen">
+        <>
+      <SignedOut>
+        <RedirectToSignIn />
+      </SignedOut>
+      <SignedIn>
+        <div className="relative h-screen" style={{ marginTop: `${-NAVBAR_HEIGHT}px` }}>
             <Canvas
                 camera={{ position: [0, 1.6, 2], fov: 75 }}
                 onPointerMissed={handleDeselect}
@@ -192,12 +209,8 @@ export default function ApartmentThree() {
                     </group>
                 )}
                 {dayNightMode === "night" && (
-                    <pointLight position={[0, 2, 0]} intensity={10} color="#fff" castShadow/>
+                    <pointLight position={[0, 2, 0]} intensity={20} color="#fff" castShadow/>
                 )}
-
-                {/* Old OrbitControls
-                <OrbitControls enabled={!selected && !selectedWall} />
-                */}
 
                 <gridHelper args={[50, 100]} />
 
@@ -216,12 +229,11 @@ export default function ApartmentThree() {
                                 key={wall.id}
                                 position={[wall.position[0], wall.position[1], wall.position[2]]}
                                 rotation={(wall.rotation ?? [0, 0, 0]) as [number, number, number]}
-                                onClick={() => handleWallSelect(wall.id)}
                                 receiveShadow
                                 castShadow={false}
                             >
                                 <planeGeometry args={[wall.dimensions.width, wall.dimensions.height]} />
-                                <meshStandardMaterial color={wallColors[wall.id] || wall.color} />
+                                <meshStandardMaterial color={wall.color} />
                             </mesh>
                         ))}
 
@@ -259,7 +271,18 @@ export default function ApartmentThree() {
                         scale={model.scale}
                         rotation={model.rotation}
                         onClick={() => handleSelect(model.id)}
-                    />
+                    >
+                        {/* If this model should emit light */}
+                        {model.url.includes("lamp") && (
+                            <pointLight
+                                intensity={10}
+                                distance={5}
+                                color="#ffddaa"
+                                position={[0, 1, 0]}   // Based on model origin
+                                castShadow
+                            />
+                        )}
+                    </Model>
                 ))}
 
                 {/* TransformControls for furniture only */}
@@ -275,7 +298,7 @@ export default function ApartmentThree() {
                 {/* Camera: Orbit mode */}
                 {cameraMode === "orbit" && (
                     <OrbitControls
-                        enabled={!selected && !selectedWall}
+                        enabled={!selected}
                         enablePan={false}
                         enableRotate={true}
                         rotateSpeed={0.6}
@@ -292,37 +315,10 @@ export default function ApartmentThree() {
             </Canvas>
 
             {/* UI Buttons */}
-            <div className="absolute top-5 left-5 z-10 flex flex-col gap-2">
+            <div className="absolute top-20 left-5 z-10 flex flex-col gap-2">
                 <div className="flex gap-2">
                     {/* Add furniture */}
                     <FurnitureList onClick={addModel} />
-
-                    {/* Wall color change UI */}
-                    {selectedWall && (
-                        <div className="flex gap-2">
-                            <button
-                                className="px-3 py-1 rounded bg-white shadow"
-                                onClick={() => setShowColorPicker(!showColorPicker)}
-                            >
-                                Change Color
-                            </button>
-                            {showColorPicker && (
-                                <div className="flex gap-1">
-                                    {colorOptions.map((color) => (
-                                        <button
-                                            key={color.value}
-                                            className="px-3 py-1 rounded border"
-                                            style={{ backgroundColor: color.value }}
-                                            onClick={() => changeWallColor(color.value)}
-                                            title={color.name}
-                                        >
-                                            {/* Optional: Add color name text if needed */}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    )}
                 </div>
 
                 <div className="flex gap-2">
@@ -341,6 +337,13 @@ export default function ApartmentThree() {
                     >
                         {dayNightMode === "day" ? "Night Mode" : "Day Mode"}
                     </button>
+
+                    <button
+                        onClick={saveDesign}
+                        className="px-3 py-1 rounded bg-blue-500 text-white shadow"
+                    >
+                        Save Design
+                    </button>
                 </div>
 
                 <div className="flex gap-2">
@@ -356,5 +359,7 @@ export default function ApartmentThree() {
                 </div>
             </div>
         </div>
+        </SignedIn>
+        </>
     );
 }

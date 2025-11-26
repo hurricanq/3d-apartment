@@ -23,6 +23,7 @@ export const createFurniture = async (req: Request, res: Response): Promise<void
         res.status(500).json({ message: `Error creating furniture: ${error.message}` });
     }
 };
+
 export const updateFurniture = async (req: Request, res: Response): Promise<void> => {
     try {
         const { id } = req.params;

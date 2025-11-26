@@ -5,7 +5,7 @@ import * as THREE from "three";
 import { Canvas, useThree } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import { DragControls as ThreeDragControls } from "three-stdlib";
-import floorplan from "@/data/floor-plan.json";
+import floorplan from "@/data/floor-plan-legacy.json";
 import { Button } from "@/components/ui/button";
 
 function Floor({ rooms }: { rooms: any[] }) {

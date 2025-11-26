@@ -2,7 +2,7 @@ import React from 'react';
 import { useTexture } from "@react-three/drei";
 import * as THREE from "three";
 
-import floorPlan from "../data/floor-plan-two.json"
+import floorPlan from "../data/floor-plan.json"
 
 function Floor({ width, height }: { width: number; height: number }) {
     const woodTexture = useTexture("/textures/wood.jpg");

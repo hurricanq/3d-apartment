@@ -18,7 +18,7 @@ async function seed() {
                 modelUrl: "modern-bed.glb",
             },
         ]
-    })
+    });
 }
 
 seed().then(() => prisma.$disconnect());

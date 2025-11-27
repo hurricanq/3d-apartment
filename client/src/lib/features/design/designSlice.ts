@@ -7,7 +7,7 @@ export interface Design {
     updatedAt: string;
     name: string;
     data: any;
-    user: number;
+    userId: string;
 }
 
 interface DesignState {
@@ -20,6 +20,7 @@ interface DesignState {
 export interface CreateDesignDTO {
     name: string;
     templateId: number;
+    userId: string;
 }
 
 export interface UpdateDesignDTO {
@@ -40,6 +41,12 @@ const API_BASE_URL = `${process.env.NEXT_PUBLIC_API_URL}/designs`;
 export const fetchDesigns = createAsyncThunk("designs/fetchAll", async () => {
     const response = await axios.get(API_BASE_URL);
     return response.data as Design[];
+});
+
+// Fetch design by ID
+export const fetchDesignById = createAsyncThunk("designs/fetchById", async (id: number) => {
+    const response = await axios.get(`${API_BASE_URL}/${id}`);
+    return response.data as Design;
 });
 
 // Create new design
@@ -87,6 +94,21 @@ const designSlice = createSlice({
         .addCase(fetchDesigns.rejected, (state, action) => {
             state.loading = false;
             state.error = action.error.message || "Failed to load designs";
+        })
+
+        // Fetch design by ID
+        .addCase(fetchDesignById.pending, (state) => {
+            state.loading = true;
+            state.error = null;
+            state.selectedDesign = null;
+        })
+        .addCase(fetchDesignById.fulfilled, (state, action: PayloadAction<Design>) => {
+            state.loading = false;
+            state.selectedDesign = action.payload;
+        })
+        .addCase(fetchDesignById.rejected, (state, action) => {
+            state.loading = false;
+            state.error = action.error.message || "Failed to load design";
         })
 
         // Create

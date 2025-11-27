@@ -5,6 +5,7 @@ import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton, useUser } 
 import { Button } from '@/components/ui/button';
 
 import { NAVBAR_HEIGHT } from "@/lib/constants"
+import SyncButton from './SyncButton';
 
 export default function Navbar() {
   const { user } = useUser();
@@ -37,6 +38,7 @@ export default function Navbar() {
 
         {/* Right Auth Buttons */}
         <div className="flex space-x-3">
+          <SyncButton />
           <SignedOut>
             <SignInButton>
               <Button variant="outline">Sign In</Button>

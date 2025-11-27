@@ -1,8 +1,6 @@
 import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
 
-import { clerkClient, clerkMiddleware, getAuth } from '@clerk/express'
-
 const prisma = new PrismaClient();
 
 export const getAllDesigns = async (req: Request, res: Response): Promise<void> => {
@@ -18,23 +16,11 @@ export const getDesignById = async (req: Request, res: Response): Promise<void> 
     try {
         const { id } = req.params;
 
-        const userId = (req as any).userId;
-        if (!userId) {
-            res.status(401).json({ message: "Unauthorized" });
-            return;
-        }
-
         const design = await prisma.design.findUnique({
             where: { id: Number(id) },
         });
         if (!design) {
             res.status(404).json({ message: "Design not found" });
-            return;
-        }
-
-        // Enforce ownership
-        if (design.userId !== userId) {
-            res.status(403).json({ message: "Forbidden: Not your design" });
             return;
         }
 
@@ -47,14 +33,12 @@ export const getDesignById = async (req: Request, res: Response): Promise<void> 
 // Create design from a template
 export const createDesign = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { name, templateId } = req.body;
+        const { name, templateId, userId } = req.body;
 
         if (!name) {
             res.status(400).json({ message: "Design name is required." });
             return;
         }
-
-        const { userId } = getAuth(req);
         
         if (!userId) {
             res.status(401).json({ message: "Unauthorized: missing userId" });

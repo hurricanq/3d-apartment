@@ -11,7 +11,7 @@ export default function UserDashboard() {
     return (
         <SidebarProvider>
             <UserDashboardSidebar onSelect={setActive} />
-            <div>
+            <div className="px-6">
                 <SidebarTrigger className="py-12" />
 
                 {active === "My Designs" && <DesignsList />}

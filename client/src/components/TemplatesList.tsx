@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useUser } from "@clerk/nextjs";
 
 import { useDispatch, useSelector } from "react-redux";
 import { RootState, AppDispatch } from "../lib/store";
@@ -14,6 +15,7 @@ import { Button } from "./ui/button";
 const TemplatesList = () => {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
+  const { user } = useUser();
 
   const { templates, loading, error } = useSelector(
     (state: RootState) => state.templates
@@ -29,26 +31,27 @@ const TemplatesList = () => {
   if (loading) return <LoadingSpinner />;
   if (error) return <p className="text-red-600">{error}</p>;
 
-  // --------------------------
   // Create design from template
-  // --------------------------
-    const handleCreate = (template: any) => {
-        const uniqueName = `New ${template.name} - ${Date.now()}`;
+  const handleCreate = (template: any) => {
+    const uniqueName = `New ${template.name}`;
 
-        dispatch(
-            createDesign({
-                name: uniqueName,
-                templateId: template.id,
-            })
-        )
-            .unwrap() // get plain result or throw
-            .then((design) => {
-                router.push(`/designs/${design.id}`);
-            })
-            .catch((err) => {
-                console.error("Create design failed:", err);
-            });
-    };
+    if (!user) return;
+
+    dispatch(
+      createDesign({
+        name: uniqueName,
+        templateId: template.id,
+        userId: user.id
+      })
+    )
+    .unwrap()
+    .then((design) => {
+      router.push(`/designs/${design.id}`);
+    })
+    .catch((err) => {
+      console.error("Create design failed:", err);
+    });
+  };
 
   return (
     <div className="flex flex-col gap-3">

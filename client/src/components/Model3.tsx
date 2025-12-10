@@ -22,7 +22,8 @@ const Model3 = forwardRef<THREE.Group, ModelProps>(({ url, onClick, children, ..
 
         clone.traverse((obj: any) => {
             if (obj.isMesh) {
-                obj.material = obj.material.clone();   // <-- IMPORTANT
+                obj.material = obj.material.clone(); // Clone material for hover effects
+                obj.castShadow = true;
             }
         });
 

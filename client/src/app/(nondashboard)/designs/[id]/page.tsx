@@ -1,27 +1,34 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
+import { HexColorPicker } from 'react-colorful';
 import { useParams } from 'next/navigation';
 import * as THREE from 'three';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, TransformControls, useTexture, PointerLockControls } from '@react-three/drei';
-import { SignedIn, SignedOut, RedirectToSignIn, SignInWithMetamaskButton } from '@clerk/nextjs';
+import { SignedIn, SignedOut, RedirectToSignIn} from '@clerk/nextjs';
 
 import Model from '@/components/Model3';
 import FPSCamera from '@/components/FPSCamera';
 import FurnitureList from '@/components/FurnitureList';
-import { NAVBAR_HEIGHT } from '@/lib/constants';
+
+// Shadcn UI components & Lucide icons
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { FootprintsIcon, OrbitIcon, SunIcon, MoonIcon, SaveIcon, Move3DIcon, Rotate3DIcon, Scale3DIcon, CopyIcon, TrashIcon } from "lucide-react";
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { FootprintsIcon, OrbitIcon, SunIcon, MoonIcon, SaveIcon, Move3DIcon, Rotate3DIcon, Scale3DIcon, CopyIcon, TrashIcon } from "lucide-react";
 
+// Redux
 import { useDispatch, useSelector } from "react-redux";
 import { RootState, AppDispatch } from "@/lib/store";
 import { fetchDesignById, updateDesign } from "@/lib/features/design/designSlice";
 
+// Constants
+import { NAVBAR_HEIGHT } from '@/lib/constants';
+
+// Interfaces
 interface ModelData {
     id: number;
     url: string;
@@ -35,17 +42,19 @@ interface NewDesignData {
     rooms?: any[];
 }
 
+interface SelectedWall {
+    roomId: number;
+    wallId: number;
+}
+
+// Functions
 function Floor({ material, position, width, height }: { material: string; position: [number, number, number]; width: number; height: number }) {
     const floorTexture = useTexture(`/textures/${material}.jpg`);
     floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping;
     floorTexture.repeat.set(10, 10);
 
     return (
-        <mesh
-            position={position}
-            rotation={[-Math.PI / 2, 0, 0]}
-            receiveShadow
-        >
+        <mesh position={position} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
             <planeGeometry args={[width, height]} />
             <meshStandardMaterial map={floorTexture} />
         </mesh>
@@ -57,28 +66,37 @@ export default function DesignPage() {
     const dispatch = useDispatch<AppDispatch>();
     const { selectedDesign } = useSelector((state: RootState) => state.designs);
 
+    // States for models and rooms
     const [models, setModels] = useState<ModelData[]>([]);
-    const [selected, setSelected] = useState<number | null>(null);  // For furniture
-    const [mode, setMode] = useState<'translate' | 'rotate' | 'scale'>('translate'); // Toggle model manipulation
-    const [cameraMode, setCameraMode] = useState<"orbit" | "fps">("orbit"); // Toggle camera mode
-    const [dayNightMode, setDayNightMode] = useState<"day" | "night">("day"); // Toggle day/night (ambient and directional lighting)
+    const [rooms, setRooms] = useState<any[]>([]);
+
+    // States for selected furniture model and wall
+    const [selectedModel, setSelectedModel] = useState<number | null>(null);
+    const [selectedWall, setSelectedWall] = useState<SelectedWall | null>(null);
+    const [hoveredWall, setHoveredWall] = useState<SelectedWall | null>(null);
+
+    // UI states
+    const [mode, setMode] = useState<'translate' | 'rotate' | 'scale'>('translate');    // Model manipulation
+    const [cameraMode, setCameraMode] = useState<"orbit" | "fps">("orbit");             // Camera mode
+    const [dayNightMode, setDayNightMode] = useState<"day" | "night">("day");           // Day/night mode
 
     // States for light controls
     const [ambientIntensity, setAmbientIntensity] = useState<number>(1);
     const [pointIntensity, setPointIntensity] = useState<number>(20);
     const [pointPosition, setPointPosition] = useState<[number, number, number]>([0, 2, 0]);
 
+    // Refs
     const transformRef = useRef<any>(null);
     const modelRefs = useRef(new Map<number, React.RefObject<THREE.Group | null>>());
 
-    // Fetch design by ID from backend API
+    // Fetch design by ID (on mount) from the backend
     useEffect(() => {
         dispatch(fetchDesignById(Number(id)));
     }, [id, dispatch]);
 
-    // Load models from the database when selectedDesign is available
+    // Load models and rooms from data of selectedDesign
     useEffect(() => {
-        if (selectedDesign && selectedDesign.data?.models) {
+        if (selectedDesign?.data?.models) {
             // Re-initialize modelRefs for the models being loaded
             const initialModels: ModelData[] = selectedDesign.data.models;
             const newModelRefs = new Map<number, React.RefObject<THREE.Group | null>>();
@@ -90,6 +108,9 @@ export default function DesignPage() {
             // Set the component state
             setModels(initialModels);
             modelRefs.current = newModelRefs;
+        }
+        if (selectedDesign?.data?.rooms) {
+            setRooms(selectedDesign.data.rooms); // Load rooms (from data) into the local state
         }
     }, [selectedDesign]);
 
@@ -110,17 +131,17 @@ export default function DesignPage() {
 
     // Remove the selected model
     const removeModel = (): void => {
-        if (selected) {
-            modelRefs.current.delete(selected);
-            setModels(models.filter((m) => m.id !== selected));
-            setSelected(null);
+        if (selectedModel) {
+            modelRefs.current.delete(selectedModel);
+            setModels(models.filter((m) => m.id !== selectedModel));
+            setSelectedModel(null);
         }
     };
 
     // Duplicate the selected model
     const duplicateModel = (): void => {
-        if (selected) {
-            const original = models.find((m) => m.id === selected);
+        if (selectedModel) {
+            const original = models.find((m) => m.id === selectedModel);
             if (original) {
                 const id = Date.now();  // Unique ID
                 const modelRef = React.createRef<THREE.Group>();
@@ -142,13 +163,40 @@ export default function DesignPage() {
     };
 
     // Handle model selection
-    const handleSelect = (id: number): void => {
-        setSelected(id);
+    const handleModelSelect = (id: number): void => {
+        setSelectedModel(id);
+        setSelectedWall(null); // Deselect wall when selecting model
+    };
+
+    // Handle wall selection
+    const handleWallSelect = (roomId: number, wallId: number): void => {
+        setSelectedWall({ roomId, wallId });
+        setSelectedModel(null); // Deselect furniture when selecting wall
     };
 
     // Handle deselection by clicking outside
     const handleDeselect = (): void => {
-        setSelected(null);
+        setSelectedModel(null);
+        setSelectedWall(null);
+    };
+
+    // Update wall color
+    const updateWallColor = (color: string): void => {
+        if (!selectedWall) return;
+        setRooms(prevRooms =>
+            prevRooms.map(room =>
+                room.id === selectedWall.roomId
+                    ? {
+                        ...room,
+                        walls: room.walls.map((wall: any) =>
+                            wall.id === selectedWall.wallId
+                                ? { ...wall, color }
+                                : wall
+                        )
+                    }
+                    : room
+            )
+        );
     };
 
     // Clamp position
@@ -159,8 +207,8 @@ export default function DesignPage() {
 
         setModels(prevModels => 
             prevModels.map(m => {
-                if (m.id === selected) {
-                    const group = modelRefs.current.get(selected)?.current;
+                if (m.id === selectedModel) {
+                    const group = modelRefs.current.get(selectedModel)?.current;
                     if (group) {
                         return {
                             ...m,
@@ -185,10 +233,10 @@ export default function DesignPage() {
 
         // 1. Construct the new 'data' payload
         // This payload includes the current furniture models state,
-        // and preserves the existing room/wall data from selectedDesign.data.
+        // and the updated room/wall data from local state.
         const newData: NewDesignData = {
             models: models,
-            rooms: selectedDesign.data.rooms // Preserve existing room structure (walls, ceiling, etc.)
+            rooms: rooms // Use updated rooms from local state
         };
 
         // 2. Prepare the update DTO
@@ -203,13 +251,9 @@ export default function DesignPage() {
         }))
         .unwrap()
         .then(() => {
-            // Optional: Provide feedback to the user on success
-            console.log("Design saved successfully!");
             alert("Design saved successfully!");
         })
         .catch((error: any) => {
-            // Optional: Handle errors and provide feedback
-            console.error("Failed to save design:", error);
             alert("Failed to save design: " + error.message);
         });
     };
@@ -226,23 +270,22 @@ export default function DesignPage() {
                         onPointerMissed={handleDeselect}
                         shadows
                     >
-                        <color attach="background" args={[dayNightMode === "day" ? "#FFFFFF" :"#111111"]} /> 
+                        <color attach="background" args={[dayNightMode === "day" ? "#FFFFFF" :"#111111"]} />
 
                         {/* Lighting (day/night) */}
-                        {dayNightMode === "day" && (
+                        {dayNightMode === "day" ? (
                             <group>
                                 <ambientLight intensity={ambientIntensity} />
                                 <directionalLight color="white" position={[1, 1, 0]} castShadow shadow-mapSize-width={2048} shadow-mapSize-height={2048} />
                             </group>
-                        )}
-                        {dayNightMode === "night" && (
+                        ) : (
                             <pointLight position={pointPosition} intensity={pointIntensity} color="#fff" castShadow/>
                         )}
 
                         <gridHelper args={[50, 100]} />
 
                         {/* Render rooms */}
-                        {selectedDesign?.data?.rooms?.map((room: any) => (
+                        {rooms.map((room: any) => (
                             <group key={room.id}>
                                 {/* Floors */}
                                 {room.floors.map((floor: any) => (
@@ -256,18 +299,28 @@ export default function DesignPage() {
                                 ))}
                     
                                 {/* Walls */}
-                                {room.walls.map((wall: any) => (
-                                    <mesh
-                                        key={wall.id}
-                                        position={[wall.position.x, wall.position.y, wall.position.z]}
-                                        rotation={[wall.rotation.x, wall.rotation.y, wall.rotation.z]}
-                                        receiveShadow
-                                        castShadow={false}
-                                    >
-                                        <boxGeometry args={[wall.dimensions.width, wall.dimensions.height, wall.dimensions.depth]} />
-                                        <meshStandardMaterial color={wall.color} />
-                                    </mesh>
-                                ))}
+                                {room.walls.map((wall: any) => {
+                                    const isHovered = hoveredWall?.roomId === room.id && hoveredWall?.wallId === wall.id;
+                                    return (
+                                        <mesh
+                                            key={wall.id}
+                                            position={[wall.position.x, wall.position.y, wall.position.z]}
+                                            rotation={[wall.rotation.x, wall.rotation.y, wall.rotation.z]}
+                                            receiveShadow
+                                            castShadow={false}
+                                            onClick={() => handleWallSelect(room.id, wall.id)}
+                                            onPointerOver={() => setHoveredWall({ roomId: room.id, wallId: wall.id })}
+                                            onPointerOut={() => setHoveredWall(null)}
+                                        >
+                                            <boxGeometry args={[wall.dimensions.width, wall.dimensions.height, wall.dimensions.depth]} />
+                                            <meshStandardMaterial
+                                                color={wall.color}
+                                                emissive={isHovered ? "#00FF00" : "#000000"} // Highlight with emissive glow
+                                                emissiveIntensity={isHovered ? 1 : 0}
+                                            />
+                                        </mesh>
+                                    );
+                                })}
                             </group>
                         ))}
 
@@ -280,43 +333,34 @@ export default function DesignPage() {
                                 position={model.position}
                                 scale={model.scale}
                                 rotation={model.rotation}
-                                onClick={() => handleSelect(model.id)}
+                                onClick={() => handleModelSelect(model.id)}
                             >
                                 {/* If this model should emit light */}
                                 {model.url.includes("lamp") && (
-                                    <pointLight
-                                        intensity={10}
-                                        distance={5}
-                                        color="#ffffff"
-                                        position={[0, 1, 0]}   // Based on model origin
-                                        castShadow
-                                    />
+                                    <pointLight intensity={10} distance={5} color="#ffffff" position={[0, 1, 0]} castShadow />
                                 )}
                             </Model>
                         ))}
 
                         {/* TransformControls for furniture only */}
-                        {selected && modelRefs.current.get(selected)?.current && (
+                        {selectedModel && modelRefs.current.get(selectedModel)?.current && (
                             <TransformControls
                                 ref={transformRef}
-                                object={modelRefs.current.get(selected)!.current!}
+                                object={modelRefs.current.get(selectedModel)!.current!}
                                 mode={mode}
                                 onObjectChange={(e: any) => clampPosition(e.target.object)}
                             />
                         )}
 
                         {/* Camera: Orbit mode */}
-                        {cameraMode === "orbit" && (
+                        {cameraMode === "orbit" ? (
                             <OrbitControls
-                                enabled={!selected}
+                                enabled={!selectedModel}
                                 enablePan={true}
                                 enableRotate={true}
                                 rotateSpeed={0.6}
                             />
-                        )}
-
-                        {/* Camera: FPS mode */}
-                        {cameraMode === "fps" && (
+                        ) : (
                             <>
                                 <FPSCamera />         {/* WASD movement */}
                                 <PointerLockControls />  {/* Mouse look */}
@@ -377,7 +421,7 @@ export default function DesignPage() {
                             </TooltipContent>
                         </Tooltip>
                         
-                        {selected && (
+                        {selectedModel && (
                             <div className="flex gap-2">
                                 <Button onClick={() => setMode('translate')}>
                                     <Move3DIcon />
@@ -391,7 +435,7 @@ export default function DesignPage() {
                                 <Button onClick={duplicateModel}>
                                     <CopyIcon />
                                 </Button>
-                                <Button onClick={removeModel} disabled={!selected}>
+                                <Button onClick={removeModel} disabled={!selectedModel}>
                                     <TrashIcon />
                                 </Button>
                             </div>
@@ -450,6 +494,18 @@ export default function DesignPage() {
 
                         </div>
                     </div>
+
+                    {/* Wall Color Picker */}
+                    {selectedWall && (
+                        <div className="absolute right-5 top-2/3 transform -translate-y-1/2 z-50 bg-white p-4 rounded shadow-lg">
+                            <Label className="block mb-2">Wall Color</Label>
+                            <HexColorPicker
+                                color={rooms.find(r => r.id === selectedWall.roomId)?.walls.find((w: any) => w.id === selectedWall.wallId)?.color || '#ffffff'}
+                                onChange={updateWallColor}
+                            />
+                            <Button onClick={() => setSelectedWall(null)} className="mt-2">Close</Button>
+                        </div>
+                    )}
                 </div>
             </SignedIn>
         </>

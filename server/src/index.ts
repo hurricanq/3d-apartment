@@ -7,6 +7,7 @@ import userRoutes from "./routes/userRoutes";
 import templateRoutes from "./routes/templateRoutes";
 import designRoutes from "./routes/designRoutes";
 import furnitureRoutes from "./routes/furnitureRoutes";
+import categoryRoutes from "./routes/categoryRoutes";
 
 // Configurations
 const app = express();
@@ -27,6 +28,7 @@ app.use("/users", userRoutes);
 app.use("/templates", templateRoutes);
 app.use("/designs", designRoutes);
 app.use("/furniture", furnitureRoutes);
+app.use("/categories", categoryRoutes);
 
 // Server
 const port = Number(process.env.PORT) || 3002;

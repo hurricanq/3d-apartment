@@ -5,12 +5,18 @@ import { useParams } from 'next/navigation';
 import * as THREE from 'three';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, TransformControls, useTexture, PointerLockControls } from '@react-three/drei';
-import { SignedIn, SignedOut, RedirectToSignIn } from '@clerk/nextjs';
+import { SignedIn, SignedOut, RedirectToSignIn, SignInWithMetamaskButton } from '@clerk/nextjs';
 
 import Model from '@/components/Model3';
 import FPSCamera from '@/components/FPSCamera';
 import FurnitureList from '@/components/FurnitureList';
 import { NAVBAR_HEIGHT } from '@/lib/constants';
+import { Slider } from "@/components/ui/slider";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { FootprintsIcon, OrbitIcon, SunIcon, MoonIcon, SaveIcon, Move3DIcon, Rotate3DIcon, Scale3DIcon, CopyIcon, TrashIcon } from "lucide-react";
+import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
 import { useDispatch, useSelector } from "react-redux";
 import { RootState, AppDispatch } from "@/lib/store";
@@ -29,19 +35,19 @@ interface NewDesignData {
     rooms?: any[];
 }
 
-function Floor({ width, height }: { width: number; height: number }) {
-    const woodTexture = useTexture("/textures/dark-wood.jpg");
-    woodTexture.wrapS = woodTexture.wrapT = THREE.RepeatWrapping;
-    woodTexture.repeat.set(10, 10);
+function Floor({ material, position, width, height }: { material: string; position: [number, number, number]; width: number; height: number }) {
+    const floorTexture = useTexture(`/textures/${material}.jpg`);
+    floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping;
+    floorTexture.repeat.set(10, 10);
 
     return (
         <mesh
-            position={[0, 0, 0]}
+            position={position}
             rotation={[-Math.PI / 2, 0, 0]}
             receiveShadow
         >
             <planeGeometry args={[width, height]} />
-            <meshStandardMaterial map={woodTexture} />
+            <meshStandardMaterial map={floorTexture} />
         </mesh>
     );
 }
@@ -56,6 +62,11 @@ export default function DesignPage() {
     const [mode, setMode] = useState<'translate' | 'rotate' | 'scale'>('translate'); // Toggle model manipulation
     const [cameraMode, setCameraMode] = useState<"orbit" | "fps">("orbit"); // Toggle camera mode
     const [dayNightMode, setDayNightMode] = useState<"day" | "night">("day"); // Toggle day/night (ambient and directional lighting)
+
+    // States for light controls
+    const [ambientIntensity, setAmbientIntensity] = useState<number>(1);
+    const [pointIntensity, setPointIntensity] = useState<number>(20);
+    const [pointPosition, setPointPosition] = useState<[number, number, number]>([0, 2, 0]);
 
     const transformRef = useRef<any>(null);
     const modelRefs = useRef(new Map<number, React.RefObject<THREE.Group | null>>());
@@ -142,9 +153,9 @@ export default function DesignPage() {
 
     // Clamp position
     const clampPosition = (object: THREE.Object3D): void => {
-        object.position.x = Math.max(-3, Math.min(3, object.position.x));
-        object.position.y = Math.max(0, Math.min(2, object.position.y));
-        object.position.z = Math.max(-3, Math.min(3, object.position.z));
+        object.position.x = Math.max(-4, Math.min(4, object.position.x));
+        object.position.y = Math.max(0, Math.min(2.5, object.position.y));
+        object.position.z = Math.max(-4, Math.min(4, object.position.z));
 
         setModels(prevModels => 
             prevModels.map(m => {
@@ -220,48 +231,43 @@ export default function DesignPage() {
                         {/* Lighting (day/night) */}
                         {dayNightMode === "day" && (
                             <group>
-                                <ambientLight intensity={1} />
+                                <ambientLight intensity={ambientIntensity} />
                                 <directionalLight color="white" position={[1, 1, 0]} castShadow shadow-mapSize-width={2048} shadow-mapSize-height={2048} />
                             </group>
                         )}
                         {dayNightMode === "night" && (
-                            <pointLight position={[0, 2, 0]} intensity={20} color="#fff" castShadow/>
+                            <pointLight position={pointPosition} intensity={pointIntensity} color="#fff" castShadow/>
                         )}
 
                         <gridHelper args={[50, 100]} />
 
-                        {/* Render walls with dynamic colors */}
+                        {/* Render rooms */}
                         {selectedDesign?.data?.rooms?.map((room: any) => (
                             <group key={room.id}>
-                                {/* Floor */}
-                                <Floor
-                                    width={room.dimensions.width}
-                                    height={room.dimensions.height}
-                                />
+                                {/* Floors */}
+                                {room.floors.map((floor: any) => (
+                                    <Floor
+                                        key={floor.id}
+                                        material={floor.material}
+                                        width={floor.dimensions.width}
+                                        height={floor.dimensions.height}
+                                        position={[floor.position.x, floor.position.y, floor.position.z]}
+                                    />
+                                ))}
                     
                                 {/* Walls */}
                                 {room.walls.map((wall: any) => (
                                     <mesh
                                         key={wall.id}
-                                        position={[wall.position[0], wall.position[1], wall.position[2]]}
-                                        rotation={(wall.rotation ?? [0, 0, 0]) as [number, number, number]}
+                                        position={[wall.position.x, wall.position.y, wall.position.z]}
+                                        rotation={[wall.rotation.x, wall.rotation.y, wall.rotation.z]}
                                         receiveShadow
                                         castShadow={false}
                                     >
-                                        <planeGeometry args={[wall.dimensions.width, wall.dimensions.height]} />
+                                        <boxGeometry args={[wall.dimensions.width, wall.dimensions.height, wall.dimensions.depth]} />
                                         <meshStandardMaterial color={wall.color} />
                                     </mesh>
                                 ))}
-
-                                {/* Ceiling */}
-                                <mesh
-                                    position={[room.ceiling.position[0], room.ceiling.position[1], room.ceiling.position[2]]}
-                                    rotation={[room.ceiling.rotation[0], room.ceiling.rotation[1], room.ceiling.rotation[2]]}
-                                    receiveShadow
-                                >
-                                    <planeGeometry args={[room.ceiling.dimensions.width, room.ceiling.dimensions.height]} />
-                                    <meshStandardMaterial color={room.ceiling.color} />
-                                </mesh>
                             </group>
                         ))}
 
@@ -281,7 +287,7 @@ export default function DesignPage() {
                                     <pointLight
                                         intensity={10}
                                         distance={5}
-                                        color="#ffddaa"
+                                        color="#ffffff"
                                         position={[0, 1, 0]}   // Based on model origin
                                         castShadow
                                     />
@@ -303,7 +309,7 @@ export default function DesignPage() {
                         {cameraMode === "orbit" && (
                             <OrbitControls
                                 enabled={!selected}
-                                enablePan={false}
+                                enablePan={true}
                                 enableRotate={true}
                                 rotateSpeed={0.6}
                             />
@@ -319,47 +325,129 @@ export default function DesignPage() {
                     </Canvas>
 
                     {/* UI Buttons */}
-                    <div className="absolute top-20 left-5 z-10 flex flex-col gap-2">
-                        <div className="flex gap-2">
-                            {/* Add furniture */}
-                            <FurnitureList onClick={addModel} />
-                        </div>
+                    <div 
+                        className="absolute top-0 left-5 z-10 flex gap-2"
+                        style={{ marginTop: `${NAVBAR_HEIGHT + 15}px` }}
+                    >
+                        {/* Add furniture */}
+                        <FurnitureList onClick={addModel} />
 
-                        <div className="flex gap-2">
-                            {/* Toggle camera mode */}
-                            <button
-                                onClick={() => setCameraMode(cameraMode === "orbit" ? "fps" : "orbit")}
-                                className="px-3 py-1 rounded bg-white shadow"
-                            >
-                                {cameraMode === "orbit" ? "FPS Walk" : "Orbit Look"}
-                            </button>
+                        {/* Toggle camera mode */}
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setCameraMode(cameraMode === "orbit" ? "fps" : "orbit")}
+                                >    
+                                    {cameraMode === "orbit" ? <FootprintsIcon /> : <OrbitIcon />}
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                {cameraMode === "orbit" ? <p>FPS Walk Mode</p> : <p>Orbit Mode</p>}
+                            </TooltipContent>
+                        </Tooltip>
 
-                            {/* Toggle day/night mode */}
-                            <button
-                                onClick={() => setDayNightMode(dayNightMode === "day" ? "night" : "day")}
-                                className="px-3 py-1 rounded bg-white shadow"
-                            >
-                                {dayNightMode === "day" ? "Night Mode" : "Day Mode"}
-                            </button>
+                        {/* Toggle day/night mode */}
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setDayNightMode(dayNightMode === "day" ? "night" : "day")}
+                                >    
+                                    {dayNightMode === "day" ? <MoonIcon /> : <SunIcon />}
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                {dayNightMode === "day" ? <p>Night Mode</p> : <p>Day Mode</p>}
+                            </TooltipContent>
+                        </Tooltip>
 
-                            <button
-                                onClick={saveDesign}
-                                className="px-3 py-1 rounded bg-blue-500 text-white shadow"
-                            >
-                                Save Design
-                            </button>
-                        </div>
+                        {/* Save design */}
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    onClick={saveDesign}
+                                >    
+                                    <SaveIcon />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Save Design</p>
+                            </TooltipContent>
+                        </Tooltip>
+                        
+                        {selected && (
+                            <div className="flex gap-2">
+                                <Button onClick={() => setMode('translate')}>
+                                    <Move3DIcon />
+                                </Button>
+                                <Button onClick={() => setMode('rotate')}>
+                                    <Rotate3DIcon />
+                                </Button>
+                                <Button onClick={() => setMode('scale')}>
+                                    <Scale3DIcon />
+                                </Button>
+                                <Button onClick={duplicateModel}>
+                                    <CopyIcon />
+                                </Button>
+                                <Button onClick={removeModel} disabled={!selected}>
+                                    <TrashIcon />
+                                </Button>
+                            </div>
+                        )}
+                    </div>
 
-                        <div className="flex gap-2">
-                            {selected && (
+                    <div className="absolute bottom-5 right-5 z-10 flex flex-col gap-2 bg-white rounded-sm px-3 py-2">
+                        <div className="flex gap-5">
+                            <div className="flex flex-col gap-3">
+                                <Label>Ambient Light Intensity</Label>
+                                <Slider
+                                    value={[ambientIntensity]}
+                                    onValueChange={(value) => setAmbientIntensity(value[0])}
+                                    max={5}
+                                    min={0}
+                                    step={0.1}
+                                    className="w-32"
+                                />
+                            </div>
+
+                            <div className="flex flex-col gap-3">
+                                <Label>Point Light Intensity</Label>
+                                <Slider
+                                    value={[pointIntensity]}
+                                    onValueChange={(value) => setPointIntensity(value[0])}
+                                    max={50}
+                                    min={0}
+                                    step={1}
+                                    className="w-32"
+                                />
+                            </div>
+
+                            <div className="flex flex-col gap-2">
+                                <Label>Point Light Position</Label>
                                 <div className="flex gap-2">
-                                    <button className="px-3 py-1 rounded bg-white shadow" onClick={() => setMode('translate')}>Translate</button>
-                                    <button className="px-3 py-1 rounded bg-white shadow" onClick={() => setMode('rotate')}>Rotate</button>
-                                    <button className="px-3 py-1 rounded bg-white shadow" onClick={() => setMode('scale')}>Scale</button>
-                                    <button className="px-3 py-1 rounded bg-white shadow" onClick={duplicateModel}>Duplicate</button>
-                                    <button className="px-3 py-1 rounded bg-red-400 text-white shadow" onClick={removeModel} disabled={!selected}>Remove</button>
+                                    <div className="flex gap-2">
+                                        <Label>X</Label>
+                                        <Input
+                                            type="number"
+                                            value={pointPosition[0]}
+                                            onChange={(e) => setPointPosition([parseFloat(e.target.value) || 0, pointPosition[1], pointPosition[2]])}
+                                            className="w-16"
+                                        />
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <Label>Y</Label>
+                                        <Input
+                                            type="number"
+                                            value={pointPosition[1]}
+                                            onChange={(e) => setPointPosition([pointPosition[0], parseFloat(e.target.value) || 0, pointPosition[2]])}
+                                            className="w-16"
+                                        />
+                                    </div>
                                 </div>
-                            )}
+                            </div>
+
                         </div>
                     </div>
                 </div>

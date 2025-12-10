@@ -31,16 +31,17 @@ model Design {
 
   name      String
   data      Json
-  userId    String     // Foreign key to User
-  user      User     @relation(fields: [userId], references: [clerkId], onDelete: Cascade)
+  userId    String  // Foreign key to User
+  user      User    @relation(fields: [userId], references: [clerkId], onDelete: Cascade)
 }
 
 model Template {
-  id        Int   @id @default(autoincrement())
+  id        String   @id @default(uuid())
   createdAt DateTime @default(now())
 
-  name      String
-  data      Json
+  name        String @unique
+  description String
+  data        Json
 }
 
 model Furniture {
@@ -48,7 +49,20 @@ model Furniture {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  name String
-  thumbnailUrl String
-  modelUrl String
+  name          String @unique
+  thumbnailUrl  String
+  modelUrl      String
+
+  categoryId  String    // Foreign key to Category
+  category    Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+}
+
+model Category {
+  id        String    @id @default(uuid())
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  name          String @unique
+  thumbnailUrl  String
+  furnitures    Furniture[] // One-to-many relation with Furniture
 }

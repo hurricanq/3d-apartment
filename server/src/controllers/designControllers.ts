@@ -50,7 +50,7 @@ export const createDesign = async (req: Request, res: Response): Promise<void> =
         // Copy template JSON if templateId is provided
         if (templateId) {
             const template = await prisma.template.findUnique({
-                where: { id: Number(templateId) },
+                where: { id: String(templateId) },
             });
 
             if (!template) {

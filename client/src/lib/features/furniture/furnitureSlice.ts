@@ -8,10 +8,12 @@ export interface Furniture {
     name: string;
     thumbnailUrl: string;
     modelUrl: string;
+    categoryId: string;
 }
 
 interface FurnitureState {
     furniture: Furniture[];
+    furnitureInCategory: Furniture[];
     selectedFurniture: Furniture | null,
     loading: boolean;
     error: string | null;
@@ -19,6 +21,7 @@ interface FurnitureState {
 
 const initialState: FurnitureState = {
     furniture: [],
+    furnitureInCategory: [],
     selectedFurniture: null,
     loading: false,
     error: null,
@@ -32,9 +35,15 @@ export const fetchFurniture = createAsyncThunk("furniture/fetchAll", async () =>
     return response.data as Furniture[];
 });
 
+// Fetch furniture by category ID
+export const fetchFurnitureByCategory = createAsyncThunk("furniture/fetchByCategory", async (id: string) => {
+    const response = await axios.get(`${API_BASE_URL}/category/${id}`);
+    return response.data as Furniture[];
+});
+
 // Create new furniture
-export const createFurniture = createAsyncThunk("furniture/create", async (productData: Omit<Furniture, "id" | "createdAt" | "updatedAt">) => {
-    const response = await axios.post(API_BASE_URL, productData);
+export const createFurniture = createAsyncThunk("furniture/create", async (furnitureData: Omit<Furniture, "id" | "createdAt" | "updatedAt">) => {
+    const response = await axios.post(API_BASE_URL, furnitureData);
     return response.data as Furniture;
 });
 
@@ -75,6 +84,20 @@ const furnitureSlice = createSlice({
         .addCase(fetchFurniture.rejected, (state, action) => {
             state.loading = false;
             state.error = action.error.message || "Failed to load furniture";
+        })
+
+        // Fetch design by ID
+        .addCase(fetchFurnitureByCategory.pending, (state) => {
+            state.loading = true;
+            state.error = null;
+        })
+        .addCase(fetchFurnitureByCategory.fulfilled, (state, action: PayloadAction<Furniture[]>) => {
+            state.loading = false;
+            state.furnitureInCategory = action.payload;
+        })
+        .addCase(fetchFurnitureByCategory.rejected, (state, action) => {
+            state.loading = false;
+            state.error = action.error.message || "Failed to load furniture by category";
         })
 
         // Create

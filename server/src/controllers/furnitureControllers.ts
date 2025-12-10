@@ -12,11 +12,24 @@ export const getAllFurniture = async (req: Request, res: Response): Promise<void
     }
 };
 
+export const getFurnitureByCategory = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { id } = req.params;
+        const furniture = await prisma.furniture.findMany({
+            where: { categoryId: String(id) },
+        });
+        res.status(201).json(furniture);
+    } catch (error: any) {
+        res.status(500).json({ message: `Error getting furniture by category: ${error.message}` });
+    }
+};
+
+
 export const createFurniture = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { id, name, thumbnailUrl, modelUrl } = req.body;
+        const { id, name, thumbnailUrl, modelUrl, categoryId } = req.body;
         const newFurniture = await prisma.furniture.create({
-            data: { id, name, thumbnailUrl, modelUrl },
+            data: { id, name, thumbnailUrl, modelUrl, categoryId },
         });
         res.status(201).json(newFurniture);
     } catch (error: any) {

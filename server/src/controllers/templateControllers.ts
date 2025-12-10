@@ -16,7 +16,7 @@ export const getTemplateById = async (req: Request, res: Response): Promise<void
     try {
         const { id } = req.params;
         const template = await prisma.template.findUnique({
-            where: { id: Number(id) },
+            where: { id: String(id) },
         });
         res.json(template);
     } catch (error: any) {
@@ -26,9 +26,9 @@ export const getTemplateById = async (req: Request, res: Response): Promise<void
 
 export const createTemplate = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { name, data } = req.body;
+        const { id, name, description, data } = req.body;
         const newTemplate = await prisma.template.create({
-            data: { name, data },
+            data: { id, name, description, data },
         });
         res.status(201).json(newTemplate);
     } catch (error: any) {
@@ -39,10 +39,10 @@ export const createTemplate = async (req: Request, res: Response): Promise<void>
 export const updateTemplate = async (req: Request, res: Response): Promise<void> => {
     try {
         const { id } = req.params;
-        const { name, data } = req.body;
+        const { name, description, data } = req.body;
         const updatedTemplate = await prisma.template.update({
-            where: { id: Number(id) },
-            data: { name, data },
+            where: { id: String(id) },
+            data: { name, description, data },
         });
         res.json(updatedTemplate);
     } catch (error: any) {
@@ -54,7 +54,7 @@ export const deleteTemplate = async (req: Request, res: Response): Promise<void>
     try {
         const { id } = req.params;
         await prisma.template.delete({
-            where: { id: Number(id) }
+            where: { id: String(id) }
         });
         res.status(204).send();
     } catch (error: any) {

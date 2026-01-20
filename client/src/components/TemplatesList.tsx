@@ -41,23 +41,21 @@ const TemplatesList = () => {
       createDesign({
         name: uniqueName,
         templateId: template.id,
-        userId: user.id
+        userId: user.id,
       })
     )
-    .unwrap()
-    .then((design) => {
-      router.push(`/designs/${design.id}`);
-    })
-    .catch((err) => {
-      console.error("Create design failed:", err);
-    });
+      .unwrap()
+      .then((design) => {
+        router.push(`/designs/${design.id}`);
+      })
+      .catch((err) => {
+        console.error("Create design failed:", err);
+      });
   };
 
   return (
     <div className="flex flex-col gap-3">
-      {createError && (
-        <p className="text-sm text-red-600">{createError}</p>
-      )}
+      {createError && <p className="text-sm text-red-600">{createError}</p>}
 
       <div className="grid grid-cols-1 gap-2">
         {templates.map((temp: any) => (
@@ -68,9 +66,7 @@ const TemplatesList = () => {
             disabled={creatingId !== null}
             onClick={() => handleCreate(temp)}
           >
-            {creatingId === String(temp.id)
-              ? "Creating..."
-              : temp.name}
+            {creatingId === String(temp.id) ? "Creating..." : temp.name}
           </Button>
         ))}
       </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { Line } from "react-konva";
+import { Line, Circle } from "react-konva";
 import { Wall, ToolMode } from "./types";
 
 interface WallLayerProps {

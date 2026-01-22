@@ -8,6 +8,7 @@ import Konva from "konva";
 import { snapPoint } from "./snap";
 import WallLayer from "./WallLayer";
 import { ToolMode, Wall, Point } from "./types";
+import Scene3D from "./Scene3D";
 
 const FloorPlanPage = () => {
   const stageRef = useRef<Konva.Stage>(null);
@@ -22,6 +23,10 @@ const FloorPlanPage = () => {
   const [toolMode, setToolMode] = useState<ToolMode>("select");
   const [hoveredWallId, setHoveredWallId] = useState<string | null>(null);
   const [selectedWallId, setSelectedWallId] = useState<string | null>(null);
+
+  type ViewMode = "2d" | "3d";
+
+  const [viewMode, setViewMode] = useState<ViewMode>("2d");
 
   const [deleteButtonPos, setDeleteButtonPos] = useState<{
     x: number;
@@ -196,88 +201,16 @@ const FloorPlanPage = () => {
         >
           Select
         </button>
+
+        <button
+          className="px-4 py-2 rounded bg-blue-600 text-white shadow"
+          onClick={() => {
+            setViewMode((prev) => (prev === "2d" ? "3d" : "2d"));
+          }}
+        >
+          {viewMode === "2d" ? "Switch to 3D View" : "Back to 2D Editor"}
+        </button>
       </div>
-
-      <Stage
-        ref={stageRef}
-        width={width}
-        height={height}
-        scaleX={scale}
-        scaleY={scale}
-        x={position.x}
-        y={position.y}
-        draggable={toolMode === "select"}
-        onDragEnd={(e) => setPosition({ x: e.target.x(), y: e.target.y() })}
-        onWheel={handleWheel}
-        onMouseDown={(e) => {
-          // existing draw-wall logic still runs here
-          handleMouseDown(e);
-
-          // deselect wall when clicking empty space
-          if (toolMode === "select" && e.target === e.target.getStage()) {
-            setSelectedWallId(null);
-            setDeleteButtonPos(null);
-          }
-        }}
-        onMouseMove={handleMouseMove}
-      >
-        {/* Grid (non-interactive) */}
-        <Layer listening={false}>
-          <FloorPlanGrid
-            width={width}
-            height={height}
-            gridSize={PIXELS_PER_METER}
-          />
-        </Layer>
-
-        {/* Floor (non-interactive) */}
-        <Layer listening={false}>
-          <Rect
-            x={floorX}
-            y={floorY}
-            width={floorWidthPx}
-            height={floorHeightPx}
-            fill="#f5f5f5"
-            stroke="#111"
-            strokeWidth={2}
-          />
-        </Layer>
-
-        {/* Walls */}
-        <Layer>
-          <WallLayer
-            walls={walls}
-            pixelsPerMeter={PIXELS_PER_METER}
-            floorX={floorX}
-            floorY={floorY}
-            toolMode={toolMode}
-            hoveredWallId={hoveredWallId}
-            selectedWallId={selectedWallId}
-            onHoverWall={(wallId) => {
-              setHoveredWallId(wallId);
-            }}
-            onSelectWall={(wallId, screenPos) => {
-              setSelectedWallId(wallId);
-              setDeleteButtonPos(screenPos);
-            }}
-          />
-
-          {/* Preview wall */}
-          {toolMode === "draw-wall" && drawingStart && previewEnd && (
-            <Line
-              points={[
-                floorX + drawingStart.x * PIXELS_PER_METER,
-                floorY + drawingStart.y * PIXELS_PER_METER,
-                floorX + previewEnd.x * PIXELS_PER_METER,
-                floorY + previewEnd.y * PIXELS_PER_METER,
-              ]}
-              stroke="#2563eb"
-              strokeWidth={0.2 * PIXELS_PER_METER}
-              dash={[8, 4]}
-            />
-          )}
-        </Layer>
-      </Stage>
 
       {toolMode === "select" && selectedWallId && deleteButtonPos && (
         <button
@@ -295,6 +228,96 @@ const FloorPlanPage = () => {
           Delete
         </button>
       )}
+
+      <div className="w-full h-[600px] border relative">
+        {viewMode === "2d" ? (
+          <Stage
+            ref={stageRef}
+            width={width}
+            height={height}
+            scaleX={scale}
+            scaleY={scale}
+            x={position.x}
+            y={position.y}
+            draggable={toolMode === "select"}
+            onDragEnd={(e) => setPosition({ x: e.target.x(), y: e.target.y() })}
+            onWheel={handleWheel}
+            onMouseDown={(e) => {
+              // existing draw-wall logic still runs here
+              handleMouseDown(e);
+
+              // deselect wall when clicking empty space
+              if (toolMode === "select" && e.target === e.target.getStage()) {
+                setSelectedWallId(null);
+                setDeleteButtonPos(null);
+              }
+            }}
+            onMouseMove={handleMouseMove}
+          >
+            {/* Grid (non-interactive) */}
+            <Layer listening={false}>
+              <FloorPlanGrid
+                width={width}
+                height={height}
+                gridSize={PIXELS_PER_METER}
+              />
+            </Layer>
+
+            {/* Floor (non-interactive) */}
+            <Layer listening={false}>
+              <Rect
+                x={floorX}
+                y={floorY}
+                width={floorWidthPx}
+                height={floorHeightPx}
+                fill="#f5f5f5"
+                stroke="#111"
+                strokeWidth={2}
+              />
+            </Layer>
+
+            {/* Walls */}
+            <Layer>
+              <WallLayer
+                walls={walls}
+                pixelsPerMeter={PIXELS_PER_METER}
+                floorX={floorX}
+                floorY={floorY}
+                toolMode={toolMode}
+                hoveredWallId={hoveredWallId}
+                selectedWallId={selectedWallId}
+                onHoverWall={(wallId) => {
+                  setHoveredWallId(wallId);
+                }}
+                onSelectWall={(wallId, screenPos) => {
+                  setSelectedWallId(wallId);
+                  setDeleteButtonPos(screenPos);
+                }}
+              />
+
+              {/* Preview wall */}
+              {toolMode === "draw-wall" && drawingStart && previewEnd && (
+                <Line
+                  points={[
+                    floorX + drawingStart.x * PIXELS_PER_METER,
+                    floorY + drawingStart.y * PIXELS_PER_METER,
+                    floorX + previewEnd.x * PIXELS_PER_METER,
+                    floorY + previewEnd.y * PIXELS_PER_METER,
+                  ]}
+                  stroke="#2563eb"
+                  strokeWidth={0.2 * PIXELS_PER_METER}
+                  dash={[8, 4]}
+                />
+              )}
+            </Layer>
+          </Stage>
+        ) : (
+          <Scene3D
+            floor={{ width: FLOOR_WIDTH, height: FLOOR_HEIGHT }}
+            walls={walls}
+          />
+        )}
+      </div>
     </div>
   );
 };

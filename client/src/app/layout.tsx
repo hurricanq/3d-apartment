@@ -1,13 +1,15 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 
-import { ClerkProvider } from '@clerk/nextjs'
+import { ClerkProvider } from "@clerk/nextjs";
 import { Providers } from "./providers";
-import NextTopLoader from 'nextjs-toploader';
+import NextTopLoader from "nextjs-toploader";
 
-import Navbar from "@/components/Navbar";
+import Header from "@/components/layout/Header";
 import { NAVBAR_HEIGHT } from "@/lib/constants";
+
+const inter = Inter({ subsets: ["latin"] });
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,14 +34,10 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en">
-        <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-        >
+        <body className={inter.className}>
           <NextTopLoader />
-          <Navbar />
-          <main
-            style={{ paddingTop: `${NAVBAR_HEIGHT}px` }}
-          >
+          <Header />
+          <main style={{ paddingTop: `${NAVBAR_HEIGHT}px` }}>
             <Providers>{children}</Providers>
           </main>
         </body>

@@ -29,7 +29,7 @@ const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false); // State for menu open/close
 
   return (
-    <header className="bg-black border-b border-gray-200">
+    <header className="fixed top-0 left-0 w-full z-50 bg-black border-b border-gray-700">
       <div className="flex items-center justify-between md:max-w-6xl mx-auto px-12 md:px-0 py-2 text-white">
         {/* Logo (left) */}
         <div className="text-lg font-semibold">
@@ -42,7 +42,7 @@ const Header = () => {
         {/* Navigation buttons (center) */}
         <nav className="hidden md:flex space-x-5 text-md">
           <Button variant="ghost">
-            <Link href="/dashboard">Projects</Link>
+            <Link href="/projects">Projects</Link>
           </Button>
           <Button variant="ghost">
             <Link href="/about">About Us</Link>

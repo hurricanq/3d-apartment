@@ -7,7 +7,7 @@ import { Providers } from "./providers";
 import NextTopLoader from "nextjs-toploader";
 
 import Header from "@/components/layout/Header";
-import { NAVBAR_HEIGHT } from "@/lib/constants";
+import Footer from "@/components/layout/Footer";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -37,9 +37,10 @@ export default function RootLayout({
         <body className={inter.className}>
           <NextTopLoader />
           <Header />
-          <main style={{ paddingTop: `${NAVBAR_HEIGHT}px` }}>
+          <main className="pt-2">
             <Providers>{children}</Providers>
           </main>
+          <Footer />
         </body>
       </html>
     </ClerkProvider>

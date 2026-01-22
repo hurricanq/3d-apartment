@@ -10,6 +10,8 @@ import WallLayer from "./WallLayer";
 import { ToolMode, Wall, Point } from "./types";
 import Scene3D from "./Scene3D";
 
+import { Button } from "@/components/ui/button";
+
 const FloorPlanPage = () => {
   const stageRef = useRef<Konva.Stage>(null);
 
@@ -35,7 +37,7 @@ const FloorPlanPage = () => {
 
   const GRID_STEP = 0.25; // meters (25cm)
   const width = 1600;
-  const height = 700;
+  const height = 800;
   const PIXELS_PER_METER = 50;
 
   // Floor size (meters)
@@ -173,26 +175,22 @@ const FloorPlanPage = () => {
   /* ---------------- Render ---------------- */
 
   return (
-    <div className="relative">
+    <div className="relative min-h-screen">
       {/* Toolbar */}
-      <div className="absolute top-4 left-4 z-10 bg-white shadow rounded p-2 flex gap-2">
-        <button
-          className={`px-3 py-1 rounded border ${
-            toolMode === "draw-wall" ? "bg-blue-600 text-white" : "bg-gray-100"
-          }`}
+      <div className="absolute top-18 left-6 z-10 bg-white shadow rounded p-2 flex gap-2">
+        <Button
+          variant={`${toolMode === "draw-wall" ? "secondary" : "default"}`}
           onClick={() => {
             setToolMode("draw-wall");
             setDrawingStart(null);
             setPreviewEnd(null);
           }}
         >
-          Draw Wall
-        </button>
+          Draw Walls
+        </Button>
 
-        <button
-          className={`px-3 py-1 rounded border ${
-            toolMode === "select" ? "bg-blue-600 text-white" : "bg-gray-100"
-          }`}
+        <Button
+          variant={`${toolMode === "select" ? "secondary" : "default"}`}
           onClick={() => {
             setToolMode("select");
             setDrawingStart(null);
@@ -200,21 +198,20 @@ const FloorPlanPage = () => {
           }}
         >
           Select
-        </button>
+        </Button>
 
-        <button
-          className="px-4 py-2 rounded bg-blue-600 text-white shadow"
+        <Button
           onClick={() => {
             setViewMode((prev) => (prev === "2d" ? "3d" : "2d"));
           }}
         >
           {viewMode === "2d" ? "Switch to 3D View" : "Back to 2D Editor"}
-        </button>
+        </Button>
       </div>
 
       {toolMode === "select" && selectedWallId && deleteButtonPos && (
-        <button
-          className="absolute z-20 px-2 py-1 text-sm bg-red-600 text-white rounded shadow"
+        <Button
+          variant="destructive"
           style={{
             left: deleteButtonPos.x + 12,
             top: deleteButtonPos.y + 12,
@@ -226,10 +223,10 @@ const FloorPlanPage = () => {
           }}
         >
           Delete
-        </button>
+        </Button>
       )}
 
-      <div className="w-full h-[600px] border relative">
+      <div className="w-full h-screen border relative">
         {viewMode === "2d" ? (
           <Stage
             ref={stageRef}

@@ -52,7 +52,7 @@ const Header = () => {
           </Button>
           {user?.publicMetadata.role == "admin" && (
             <Button variant="ghost">
-              <Link href="/admin">Dashboard</Link>
+              <Link href="/dashboard">Dashboard</Link>
             </Button>
           )}
         </nav>
@@ -90,7 +90,7 @@ const Header = () => {
               <nav className="flex flex-col">
                 <Button variant="ghost" className="h-16">
                   <Link
-                    href="/dashboard"
+                    href="/projects"
                     onClick={() => setIsMenuOpen(false)} // Close menu on click
                     className="text-xl"
                   >
@@ -115,6 +115,17 @@ const Header = () => {
                     2D Floor Plan
                   </Link>
                 </Button>
+                {user?.publicMetadata.role == "admin" && (
+                  <Button variant="ghost" className="h-16">
+                    <Link
+                      href="/dashboard"
+                      onClick={() => setIsMenuOpen(false)} // Close menu on click
+                      className="text-xl"
+                    >
+                      Dashboard
+                    </Link>
+                  </Button>
+                )}
               </nav>
               <SheetFooter>
                 <SyncButton />

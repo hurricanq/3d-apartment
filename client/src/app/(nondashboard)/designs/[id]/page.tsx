@@ -110,7 +110,7 @@ export default function DesignPage() {
 
   // UI states
   const [mode, setMode] = useState<"translate" | "rotate" | "scale">(
-    "translate"
+    "translate",
   ); // Model manipulation
   const [cameraMode, setCameraMode] = useState<"orbit" | "fps">("orbit"); // Camera mode
   const [dayNightMode, setDayNightMode] = useState<"day" | "night">("day"); // Day/night mode
@@ -125,7 +125,7 @@ export default function DesignPage() {
   // Refs
   const transformRef = useRef<any>(null);
   const modelRefs = useRef(
-    new Map<number, React.RefObject<THREE.Group | null>>()
+    new Map<number, React.RefObject<THREE.Group | null>>(),
   );
 
   // Fetch design by ID (on mount) from the backend
@@ -231,11 +231,11 @@ export default function DesignPage() {
           ? {
               ...room,
               walls: room.walls.map((wall: any) =>
-                wall.id === selectedWall.wallId ? { ...wall, color } : wall
+                wall.id === selectedWall.wallId ? { ...wall, color } : wall,
               ),
             }
-          : room
-      )
+          : room,
+      ),
     );
   };
 
@@ -266,13 +266,13 @@ export default function DesignPage() {
               scale: [group.scale.x, group.scale.y, group.scale.z] as [
                 number,
                 number,
-                number
+                number,
               ],
             };
           }
         }
         return m;
-      })
+      }),
     );
   };
 
@@ -301,7 +301,7 @@ export default function DesignPage() {
       updateDesign({
         id: Number(id),
         data: updateData,
-      })
+      }),
     )
       .unwrap()
       .then(() => {
@@ -469,7 +469,7 @@ export default function DesignPage() {
 
           {/* UI Buttons */}
           <div
-            className="absolute top-0 left-5 z-10 flex gap-2"
+            className="absolute top-12 left-5 z-10 flex gap-2"
             style={{ marginTop: `${NAVBAR_HEIGHT + 15}px` }}
           >
             {/* Add furniture */}

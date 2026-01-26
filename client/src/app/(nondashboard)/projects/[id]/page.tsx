@@ -1,7 +1,8 @@
 "use client";
 
-import { Stage, Layer, Rect, Line } from "react-konva";
 import React, { useState, useEffect, useRef } from "react";
+import { Stage, Layer, Rect, Line, Group } from "react-konva";
+import { useParams } from "next/navigation";
 import FloorPlanGrid from "./FloorPlanGrid";
 import Konva from "konva";
 
@@ -12,7 +13,19 @@ import Scene3D from "./Scene3D";
 
 import { Button } from "@/components/ui/button";
 
+// Redux
+import { useDispatch, useSelector } from "react-redux";
+import { RootState, AppDispatch } from "@/lib/store";
+import {
+  fetchDesignById,
+  updateDesign,
+} from "@/lib/features/design/designSlice";
+
 const FloorPlanPage = () => {
+  const { id } = useParams();
+  const dispatch = useDispatch<AppDispatch>();
+  const { selectedDesign } = useSelector((state: RootState) => state.designs);
+
   const stageRef = useRef<Konva.Stage>(null);
 
   const [scale, setScale] = useState(1);
@@ -26,6 +39,12 @@ const FloorPlanPage = () => {
   const [hoveredWallId, setHoveredWallId] = useState<string | null>(null);
   const [selectedWallId, setSelectedWallId] = useState<string | null>(null);
 
+  // Floor dimensions (width, height)
+  const [floorDimensions, setFloorDimensions] = useState({
+    width: 0,
+    height: 0,
+  });
+
   type ViewMode = "2d" | "3d";
 
   const [viewMode, setViewMode] = useState<ViewMode>("2d");
@@ -35,17 +54,38 @@ const FloorPlanPage = () => {
     y: number;
   } | null>(null);
 
+  // Fetch design by ID (on mount) from the backend
+  useEffect(() => {
+    dispatch(fetchDesignById(Number(id)));
+  }, [id, dispatch]);
+
+  // Load rooms from data of selectedDesign
+  useEffect(() => {
+    if (selectedDesign?.data?.rooms?.length > 0) {
+      const room = selectedDesign?.data.rooms[0];
+
+      // Load floor dimensions
+      if (room.floors?.length > 0) {
+        setFloorDimensions({
+          width: room.floors[0].dimensions.width,
+          height: room.floors[0].dimensions.height,
+        });
+      }
+
+      // Load walls
+      if (room.walls?.length > 0) {
+        setWalls(room.walls);
+      }
+    }
+  }, [selectedDesign]);
+
   const GRID_STEP = 0.25; // meters (25cm)
   const width = 1600;
   const height = 800;
   const PIXELS_PER_METER = 50;
 
-  // Floor size (meters)
-  const FLOOR_WIDTH = 8;
-  const FLOOR_HEIGHT = 6;
-
-  const floorWidthPx = FLOOR_WIDTH * PIXELS_PER_METER;
-  const floorHeightPx = FLOOR_HEIGHT * PIXELS_PER_METER;
+  const floorWidthPx = floorDimensions.width * PIXELS_PER_METER;
+  const floorHeightPx = floorDimensions.height * PIXELS_PER_METER;
 
   const floorX = (width - floorWidthPx) / 2;
   const floorY = (height - floorHeightPx) / 2;
@@ -145,7 +185,12 @@ const FloorPlanPage = () => {
       id: crypto.randomUUID(),
       start: drawingStart,
       end: snapped,
-      thickness: 0.2,
+      dimensions: {
+        height: 3,
+        depth: 0.1,
+      },
+      color: "#ffffff",
+      material: "Plastic",
     };
 
     setWalls((prev) => [...prev, newWall]);
@@ -227,7 +272,9 @@ const FloorPlanPage = () => {
       )}
 
       <div className="w-full h-screen border relative">
-        {viewMode === "2d" ? (
+        {viewMode === "2d" &&
+        floorDimensions.width > 0 &&
+        floorDimensions.height > 0 ? (
           <Stage
             ref={stageRef}
             width={width}
@@ -260,20 +307,19 @@ const FloorPlanPage = () => {
               />
             </Layer>
 
-            {/* Floor (non-interactive) */}
             <Layer listening={false}>
               <Rect
                 x={floorX}
                 y={floorY}
-                width={floorWidthPx}
-                height={floorHeightPx}
-                fill="#f5f5f5"
+                width={floorDimensions.width * PIXELS_PER_METER}
+                height={floorDimensions.height * PIXELS_PER_METER}
+                fill="#ffffff"
                 stroke="#111"
                 strokeWidth={2}
               />
             </Layer>
 
-            {/* Walls */}
+            {/* Render rooms */}
             <Layer>
               <WallLayer
                 walls={walls}
@@ -310,8 +356,11 @@ const FloorPlanPage = () => {
           </Stage>
         ) : (
           <Scene3D
-            floor={{ width: FLOOR_WIDTH, height: FLOOR_HEIGHT }}
-            walls={walls}
+            floor={{
+              width: floorDimensions.width,
+              height: floorDimensions.height,
+            }}
+            walls={walls || []}
           />
         )}
       </div>

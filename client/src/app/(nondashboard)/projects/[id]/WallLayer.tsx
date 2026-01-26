@@ -51,7 +51,7 @@ export default function WallLayer({
                   ? "#f87171" // light red
                   : "#111827"
             }
-            strokeWidth={wall.thickness * pixelsPerMeter}
+            strokeWidth={wall.dimensions.depth * pixelsPerMeter}
             lineCap="square"
             listening={toolMode === "select"}
             onMouseEnter={() => {

@@ -64,7 +64,7 @@ const Designs = ({ search, sort }: DesignsProps) => {
       {processedDesigns.map((des) => (
         <div key={des.id} className="flex flex-col gap-3">
           <Link
-            href={`/designs/${des.id}`}
+            href={`/projects/${des.id}`}
             className="px-3 py-3 rounded bg-white shadow hover:bg-gray-100"
           >
             <Image

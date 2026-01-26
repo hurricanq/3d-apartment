@@ -18,7 +18,7 @@ const TemplatesList = () => {
   const { user } = useUser();
 
   const { templates, loading, error } = useSelector(
-    (state: RootState) => state.templates
+    (state: RootState) => state.templates,
   );
 
   const [creatingId, setCreatingId] = useState<string | null>(null);
@@ -42,11 +42,11 @@ const TemplatesList = () => {
         name: uniqueName,
         templateId: template.id,
         userId: user.id,
-      })
+      }),
     )
       .unwrap()
       .then((design) => {
-        router.push(`/designs/${design.id}`);
+        router.push(`/projects/${design.id}`);
       })
       .catch((err) => {
         console.error("Create design failed:", err);

@@ -1,13 +1,13 @@
 interface Wall3DProps {
   wall: {
+    dimensions: { height: number; depth: number };
     start: { x: number; y: number };
     end: { x: number; y: number };
-    thickness: number;
+    color: string;
   };
-  height: number; // wall height in meters
 }
 
-export default function Wall3D({ wall, height }: Wall3DProps) {
+export default function Wall3D({ wall }: Wall3DProps) {
   const dx = wall.end.x - wall.start.x;
   const dy = wall.end.y - wall.start.y;
 
@@ -20,12 +20,14 @@ export default function Wall3D({ wall, height }: Wall3DProps) {
 
   return (
     <mesh
-      position={[cx, height / 2, cy]} // center in XZ, lift in Y
+      position={[cx, wall.dimensions.height / 2, cy]} // center in XZ, lift in Y
       rotation={[0, -angle, 0]}
     >
       {/* Box: length × height × thickness */}
-      <boxGeometry args={[length, height, wall.thickness]} />
-      <meshStandardMaterial color="#9ca3af" />
+      <boxGeometry
+        args={[length, wall.dimensions.height, wall.dimensions.depth]}
+      />
+      <meshStandardMaterial color={wall.color} />
     </mesh>
   );
 }

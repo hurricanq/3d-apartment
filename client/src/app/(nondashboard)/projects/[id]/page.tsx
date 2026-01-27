@@ -217,33 +217,104 @@ const FloorPlanPage = () => {
     setPreviewEnd(snapped);
   };
 
+  const buildFloorPlanJSON = () => {
+    return {
+      rooms: [
+        {
+          id: "room",
+          name: "Room",
+
+          floors: [
+            {
+              id: "rf-1",
+              dimensions: {
+                width: floorDimensions.width,
+                height: floorDimensions.height,
+              },
+              color: "#FFFFFF",
+              material: "Maple",
+            },
+          ],
+
+          walls: walls.map((wall) => ({
+            id: wall.id,
+            dimensions: {
+              height: wall.dimensions.height,
+              depth: wall.dimensions.depth,
+            },
+            start: wall.start,
+            end: wall.end,
+            color: wall.color || "#FFFFFF",
+            material: wall.material || "Plastic",
+          })),
+        },
+      ],
+    };
+  };
+
+  const handleSave = async () => {
+    if (!id) return;
+
+    const payload = buildFloorPlanJSON();
+
+    try {
+      const res = await fetch(`http://localhost:3001/designs/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          data: payload,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to save design");
+      }
+
+      const result = await res.json();
+      console.log("Saved design:", result);
+
+      alert("Design saved successfully!");
+    } catch (err) {
+      console.error("Save error:", err);
+      alert("Failed to save design");
+    }
+  };
+
   /* ---------------- Render ---------------- */
 
   return (
     <div className="relative min-h-screen">
       {/* Toolbar */}
       <div className="absolute top-18 left-6 z-10 bg-white shadow rounded p-2 flex gap-2">
-        <Button
-          variant={`${toolMode === "draw-wall" ? "secondary" : "default"}`}
-          onClick={() => {
-            setToolMode("draw-wall");
-            setDrawingStart(null);
-            setPreviewEnd(null);
-          }}
-        >
-          Draw Walls
-        </Button>
+        {viewMode === "2d" ? (
+          <div>
+            <Button
+              variant={`${toolMode === "draw-wall" ? "secondary" : "default"}`}
+              onClick={() => {
+                setToolMode("draw-wall");
+                setDrawingStart(null);
+                setPreviewEnd(null);
+              }}
+            >
+              Draw Walls
+            </Button>
 
-        <Button
-          variant={`${toolMode === "select" ? "secondary" : "default"}`}
-          onClick={() => {
-            setToolMode("select");
-            setDrawingStart(null);
-            setPreviewEnd(null);
-          }}
-        >
-          Select
-        </Button>
+            <Button
+              variant={`${toolMode === "select" ? "secondary" : "default"}`}
+              onClick={() => {
+                setToolMode("select");
+                setDrawingStart(null);
+                setPreviewEnd(null);
+              }}
+            >
+              Select
+            </Button>
+          </div>
+        ) : (
+          <div></div>
+        )}
 
         <Button
           onClick={() => {
@@ -252,11 +323,14 @@ const FloorPlanPage = () => {
         >
           {viewMode === "2d" ? "Switch to 3D View" : "Back to 2D Editor"}
         </Button>
+
+        <Button onClick={handleSave}>Save Design</Button>
       </div>
 
       {toolMode === "select" && selectedWallId && deleteButtonPos && (
         <Button
           variant="destructive"
+          className="absolute z-20"
           style={{
             left: deleteButtonPos.x + 12,
             top: deleteButtonPos.y + 12,
@@ -359,6 +433,7 @@ const FloorPlanPage = () => {
             floor={{
               width: floorDimensions.width,
               height: floorDimensions.height,
+              material: "Maple",
             }}
             walls={walls || []}
           />

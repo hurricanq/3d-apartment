@@ -1,5 +1,6 @@
-import * as THREE from "three";
 import React from "react";
+import { useTexture } from "@react-three/drei";
+import * as THREE from "three";
 
 interface Wall3DProps {
   wall: {
@@ -10,6 +11,7 @@ interface Wall3DProps {
     color?: string;
     material?: string;
   };
+  material: string;
   highlighted?: boolean;
   onClick?: () => void;
   onHover?: (hover: boolean) => void;
@@ -17,6 +19,7 @@ interface Wall3DProps {
 
 export default function Wall3D({
   wall,
+  material,
   highlighted = false,
   onClick,
   onHover,
@@ -30,6 +33,10 @@ export default function Wall3D({
   // Center position in XZ plane
   const cx = (wall.start.x + wall.end.x) / 2;
   const cz = (wall.start.y + wall.end.y) / 2;
+
+  const wallTexture = useTexture(`/textures/${material}.jpg`);
+  wallTexture.wrapS = wallTexture.wrapT = THREE.RepeatWrapping;
+  wallTexture.repeat.set(10, 10);
 
   return (
     <mesh

@@ -15,6 +15,8 @@ import {
   TooltipTrigger,
   TooltipContent,
 } from "@/components/ui/tooltip";
+import Image from "next/image";
+import { ScrollArea } from "./ui/scroll-area";
 
 const FurnitureList = ({
   onClick,
@@ -57,28 +59,62 @@ const FurnitureList = ({
 
       <div className="flex gap-2">
         {/* Categories List */}
-        <div className="flex flex-col gap-2">
-          {showCategories &&
-            categories.map((cat) => (
-              <Button
-                key={cat.id}
-                onClick={() => handleFurnitureByCategory(cat.id)}
-              >
-                {cat.name}
-              </Button>
-            ))}
-        </div>
+        {showCategories && (
+          <ScrollArea className="h-[500px] w-[300px] rounded-md border p-4 bg-white">
+            <div className="grid grid-cols-2 gap-2">
+              {categories.map((cat) => (
+                <div
+                  key={cat.id}
+                  onClick={() => handleFurnitureByCategory(cat.id)}
+                  className="space-y-2 p-2 shadow rounded"
+                >
+                  <div className="rounded overflow-hidden">
+                    <Image
+                      src={`/renders/${cat.id}.png`}
+                      width={150}
+                      height={150}
+                      alt="Category image"
+                      className="aspect-square object-cover hover:scale-150 transition-transform"
+                    />
+                  </div>
+
+                  <div>{cat.name}</div>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+        )}
 
         {/* Furniture (of a Category) List */}
-        <div className="flex flex-col gap-2">
-          {showCategories &&
-            showFurniture &&
-            furnitureInCategory.map((fur) => (
-              <Button key={fur.id} onClick={() => onClick?.(fur.modelUrl)}>
-                {fur.name}
-              </Button>
-            ))}
-        </div>
+        {showCategories && showFurniture && (
+          <ScrollArea className="h-[500px] w-[150px] rounded-md border p-4 bg-white">
+            <div className="grid grid-cols-1 gap-2">
+              {furnitureInCategory.length > 0 ? (
+                furnitureInCategory.map((fur) => (
+                  <div
+                    key={fur.id}
+                    onClick={() => onClick?.(fur.modelUrl)}
+                    className="space-y-2 p-2 shadow rounded"
+                  >
+                    <div className="rounded overflow-hidden">
+                      <Image
+                        src={`/renders/${fur.id}.png`}
+                        width={150}
+                        height={150}
+                        alt="Model image"
+                        className="aspect-square object-cover hover:scale-150 transition-transform"
+                      />
+                    </div>
+
+                    <div>{fur.name}</div>
+                  </div>
+                ))
+              ) : (
+                <div className="p-2">No models available.</div>
+              )}
+            </div>
+          </ScrollArea>
+        )}
       </div>
     </div>
   );

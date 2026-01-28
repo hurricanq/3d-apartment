@@ -35,6 +35,7 @@ import {
 
 import { Wall } from "./types";
 import FurnitureList from "@/components/FurnitureList";
+import MaterialList from "@/components/MaterialList";
 
 /* ---------------- TYPES ---------------- */
 
@@ -44,6 +45,7 @@ interface ModelData {
   position: [number, number, number];
   scale?: [number, number, number];
   rotation?: [number, number, number];
+  color: string;
 }
 
 interface Scene3DProps {
@@ -74,7 +76,7 @@ export default function Scene3D({ floor, walls }: Scene3DProps) {
   const [ambientIntensity, setAmbientIntensity] = useState(1);
   const [pointIntensity, setPointIntensity] = useState(20);
   const [pointPosition, setPointPosition] = useState<[number, number, number]>([
-    0, 2, 0,
+    4, 2, 3,
   ]);
 
   /* ----------- REFS ----------- */
@@ -99,6 +101,7 @@ export default function Scene3D({ floor, walls }: Scene3DProps) {
       position: [4, 0, 4],
       scale: [1, 1, 1],
       rotation: [0, 0, 0],
+      color: "#FFFFFF",
     };
     setModels([...models, newModel]);
   };
@@ -130,6 +133,7 @@ export default function Scene3D({ floor, walls }: Scene3DProps) {
           ],
           scale: original.scale,
           rotation: original.rotation,
+          color: original.color,
         };
         setModels([...models, duplicated]);
       }
@@ -145,10 +149,24 @@ export default function Scene3D({ floor, walls }: Scene3DProps) {
     );
   };
 
+  const handleChangeMaterial = (name: string) => {
+    if (!selectedWall) return;
+
+    walls.map((wall: any) =>
+      wall.id === selectedWall ? { ...wall, material: name } : wall,
+    );
+  };
+
+  const updateModelColor = (color: string): void => {
+    if (!selectedModel) return;
+
+    models.map((m: any) => (m.id === selectedModel ? { ...m, color } : m));
+  };
+
   const clampPosition = (object: THREE.Object3D): void => {
-    object.position.x = Math.max(-4, Math.min(4, object.position.x));
+    object.position.x = Math.max(0, Math.min(8, object.position.x));
     object.position.y = Math.max(0, Math.min(2.5, object.position.y));
-    object.position.z = Math.max(-4, Math.min(4, object.position.z));
+    object.position.z = Math.max(0, Math.min(6, object.position.z));
 
     setModels((prevModels) =>
       prevModels.map((m) => {
@@ -242,6 +260,9 @@ export default function Scene3D({ floor, walls }: Scene3DProps) {
             <Wall3D
               key={wall.id}
               wall={wall}
+              material={
+                walls.find((w) => w.id === selectedWall)?.material || "Maple"
+              }
               highlighted={isHovered || isSelected}
               onClick={() => {
                 setSelectedWall(wall.id);
@@ -318,6 +339,9 @@ export default function Scene3D({ floor, walls }: Scene3DProps) {
           {dayNight === "day" ? <MoonIcon /> : <SunIcon />}
         </Button>
 
+        {/* Materials */}
+        {selectedWall && <MaterialList onClick={handleChangeMaterial} />}
+
         {/* Transform buttons */}
         {selectedModel && (
           <>
@@ -344,41 +368,49 @@ export default function Scene3D({ floor, walls }: Scene3DProps) {
 
       <div className="absolute bottom-5 right-5 z-10 bg-white p-3 rounded shadow">
         <div className="flex flex-col gap-3">
-          <Label>Ambient</Label>
-          <Slider
-            value={[ambientIntensity]}
-            onValueChange={(v) => setAmbientIntensity(v[0])}
-            min={0}
-            max={5}
-            step={0.1}
-          />
-
-          <Label>Point Intensity</Label>
-          <Slider
-            value={[pointIntensity]}
-            onValueChange={(v) => setPointIntensity(v[0])}
-            min={0}
-            max={50}
-            step={1}
-          />
-
-          <Label>Point Position</Label>
-          <div className="flex gap-2">
-            {["X", "Y", "Z"].map((axis, i) => (
-              <Input
-                key={axis}
-                type="number"
-                value={pointPosition[i]}
-                onChange={(e) => {
-                  const v = parseFloat(e.target.value) || 0;
-                  const arr = [...pointPosition] as any;
-                  arr[i] = v;
-                  setPointPosition(arr);
-                }}
-                className="w-16"
+          {dayNight === "day" && (
+            <div className="space-y-3">
+              <Label>Ambient Intensity</Label>
+              <Slider
+                value={[ambientIntensity]}
+                onValueChange={(v) => setAmbientIntensity(v[0])}
+                min={0}
+                max={5}
+                step={0.1}
               />
-            ))}
-          </div>
+            </div>
+          )}
+
+          {dayNight === "night" && (
+            <div className="space-y-3">
+              <Label>Point Intensity</Label>
+              <Slider
+                value={[pointIntensity]}
+                onValueChange={(v) => setPointIntensity(v[0])}
+                min={0}
+                max={50}
+                step={1}
+              />
+
+              <Label>Point Position</Label>
+              <div className="flex gap-2">
+                {["X", "Y", "Z"].map((axis, i) => (
+                  <Input
+                    key={axis}
+                    type="number"
+                    value={pointPosition[i]}
+                    onChange={(e) => {
+                      const v = parseFloat(e.target.value) || 0;
+                      const arr = [...pointPosition] as any;
+                      arr[i] = v;
+                      setPointPosition(arr);
+                    }}
+                    className="w-16"
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -392,6 +424,21 @@ export default function Scene3D({ floor, walls }: Scene3DProps) {
             onChange={updateWallColor}
           />
           <Button className="mt-2" onClick={() => setSelectedWall(null)}>
+            Close
+          </Button>
+        </div>
+      )}
+
+      {selectedModel && (
+        <div className="absolute right-5 top-1/2 -translate-y-1/2 z-20 bg-white p-4 rounded shadow">
+          <Label className="mb-2 block">Model Color</Label>
+          <HexColorPicker
+            color={
+              models.find((m) => m.id === selectedModel)?.color || "#ffffff"
+            }
+            onChange={updateModelColor}
+          />
+          <Button className="mt-2" onClick={() => setSelectedModel(null)}>
             Close
           </Button>
         </div>

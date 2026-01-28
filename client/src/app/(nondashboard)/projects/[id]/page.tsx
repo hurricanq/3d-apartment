@@ -287,7 +287,7 @@ const FloorPlanPage = () => {
   return (
     <div className="relative min-h-screen">
       {/* Toolbar */}
-      <div className="absolute top-18 left-6 z-10 bg-white shadow rounded p-2 flex gap-2">
+      <div className="absolute top-18 left-6 z-10 flex gap-2">
         {viewMode === "2d" ? (
           <div>
             <Button

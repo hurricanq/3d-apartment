@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useTexture } from "@react-three/drei";
 import * as THREE from "three";
 
@@ -11,7 +11,6 @@ interface Wall3DProps {
     color?: string;
     material?: string;
   };
-  material: string;
   highlighted?: boolean;
   onClick?: () => void;
   onHover?: (hover: boolean) => void;
@@ -19,7 +18,6 @@ interface Wall3DProps {
 
 export default function Wall3D({
   wall,
-  material,
   highlighted = false,
   onClick,
   onHover,
@@ -34,7 +32,7 @@ export default function Wall3D({
   const cx = (wall.start.x + wall.end.x) / 2;
   const cz = (wall.start.y + wall.end.y) / 2;
 
-  const wallTexture = useTexture(`/textures/${material}.jpg`);
+  const wallTexture = useTexture(`/textures/${wall.material}.jpg`);
   wallTexture.wrapS = wallTexture.wrapT = THREE.RepeatWrapping;
   wallTexture.repeat.set(10, 10);
 
@@ -64,6 +62,7 @@ export default function Wall3D({
       />
 
       <meshStandardMaterial
+        map={wallTexture}
         color={highlighted ? "#60a5fa" : wall.color}
         emissive={highlighted ? new THREE.Color("#2563eb") : undefined}
         emissiveIntensity={highlighted ? 0.4 : 0}

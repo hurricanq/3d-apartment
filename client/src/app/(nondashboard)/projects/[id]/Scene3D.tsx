@@ -2,12 +2,13 @@
 
 import React, { useRef, useState } from "react";
 import * as THREE from "three";
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useThree } from "@react-three/fiber";
 import {
   OrbitControls,
   TransformControls,
   PointerLockControls,
   Grid,
+  PerspectiveCamera,
 } from "@react-three/drei";
 
 import Floor3D from "./Floor3D";
@@ -31,6 +32,7 @@ import {
   Scale3DIcon,
   CopyIcon,
   TrashIcon,
+  CameraIcon,
 } from "lucide-react";
 
 import { Wall } from "./types";
@@ -85,8 +87,12 @@ export default function Scene3D({ floor, walls }: Scene3DProps) {
   const modelRefs = useRef(
     new Map<number, React.RefObject<THREE.Group | null>>(),
   );
+  const glRef = useRef<THREE.WebGLRenderer | null>(null); // New ref for the renderer
 
   const [models, setModels] = useState<ModelData[]>([]);
+  const [renderMode, setRenderMode] = useState(false);
+
+  const [wallsState, setWallsState] = useState(walls);
 
   /* ----------- MODEL HELPERS ----------- */
 
@@ -143,17 +149,19 @@ export default function Scene3D({ floor, walls }: Scene3DProps) {
   // Update wall color
   const updateWallColor = (color: string): void => {
     if (!selectedWall) return;
-
-    walls.map((wall: any) =>
-      wall.id === selectedWall ? { ...wall, color } : wall,
+    setWallsState((prevWalls) =>
+      prevWalls.map((wall) =>
+        wall.id === selectedWall ? { ...wall, color } : wall,
+      ),
     );
   };
 
   const handleChangeMaterial = (name: string) => {
     if (!selectedWall) return;
-
-    walls.map((wall: any) =>
-      wall.id === selectedWall ? { ...wall, material: name } : wall,
+    setWallsState((prevWalls) =>
+      prevWalls.map((wall) =>
+        wall.id === selectedWall ? { ...wall, material: name } : wall,
+      ),
     );
   };
 
@@ -199,6 +207,16 @@ export default function Scene3D({ floor, walls }: Scene3DProps) {
     );
   };
 
+  // New function to export the scene as an image
+  const exportImage = (): void => {
+    if (glRef.current) {
+      const link = document.createElement("a");
+      link.download = "scene.png"; // Filename for the download
+      link.href = glRef.current.domElement.toDataURL("image/png"); // Generate PNG data URL
+      link.click(); // Trigger the download
+    }
+  };
+
   /* ---------------- RENDER ---------------- */
 
   return (
@@ -241,6 +259,28 @@ export default function Scene3D({ floor, walls }: Scene3DProps) {
           </>
         )}
 
+        <PerspectiveCamera
+          makeDefault={renderMode}
+          position={[15, 8, 15]}
+          fov={45}
+          near={0.1}
+          far={1000}
+        />
+
+        {renderMode && (
+          <>
+            <ambientLight intensity={0.6} />
+            <directionalLight
+              position={[10, 15, 10]}
+              intensity={1.2}
+              castShadow
+              shadow-mapSize-width={2048}
+              shadow-mapSize-height={2048}
+            />
+            <directionalLight position={[-10, 5, -10]} intensity={0.6} />
+          </>
+        )}
+
         {/* Grid */}
         <Grid args={[50, 50]} />
 
@@ -252,7 +292,7 @@ export default function Scene3D({ floor, walls }: Scene3DProps) {
         />
 
         {/* Walls */}
-        {walls.map((wall) => {
+        {wallsState.map((wall) => {
           const isHovered = hoveredWall === wall.id;
           const isSelected = selectedWall === wall.id;
 
@@ -260,9 +300,6 @@ export default function Scene3D({ floor, walls }: Scene3DProps) {
             <Wall3D
               key={wall.id}
               wall={wall}
-              material={
-                walls.find((w) => w.id === selectedWall)?.material || "Maple"
-              }
               highlighted={isHovered || isSelected}
               onClick={() => {
                 setSelectedWall(wall.id);
@@ -319,7 +356,7 @@ export default function Scene3D({ floor, walls }: Scene3DProps) {
 
       {/* ---------- UI TOOLBAR ---------- */}
 
-      <div className="absolute top-32 left-6 p-2 z-10 flex gap-2">
+      <div className="absolute top-28 left-6 p-2 z-10 flex gap-2">
         {/* Add furniture */}
         <FurnitureList onClick={addModel} />
 
@@ -337,6 +374,13 @@ export default function Scene3D({ floor, walls }: Scene3DProps) {
           onClick={() => setDayNight(dayNight === "day" ? "night" : "day")}
         >
           {dayNight === "day" ? <MoonIcon /> : <SunIcon />}
+        </Button>
+
+        <Button
+          variant={renderMode ? "destructive" : "default"}
+          onClick={() => setRenderMode(!renderMode)}
+        >
+          <CameraIcon />
         </Button>
 
         {/* Materials */}
@@ -362,6 +406,12 @@ export default function Scene3D({ floor, walls }: Scene3DProps) {
             </Button>
           </>
         )}
+
+        {renderMode && (
+          <>
+            <Button onClick={exportImage}>Export Image</Button>
+          </>
+        )}
       </div>
 
       {/* ---------- LIGHT PANEL ---------- */}
@@ -370,7 +420,7 @@ export default function Scene3D({ floor, walls }: Scene3DProps) {
         <div className="flex flex-col gap-3">
           {dayNight === "day" && (
             <div className="space-y-3">
-              <Label>Ambient Intensity</Label>
+              <Label>Ambient Light Intensity</Label>
               <Slider
                 value={[ambientIntensity]}
                 onValueChange={(v) => setAmbientIntensity(v[0])}
@@ -383,7 +433,7 @@ export default function Scene3D({ floor, walls }: Scene3DProps) {
 
           {dayNight === "night" && (
             <div className="space-y-3">
-              <Label>Point Intensity</Label>
+              <Label>Point Light Intensity</Label>
               <Slider
                 value={[pointIntensity]}
                 onValueChange={(v) => setPointIntensity(v[0])}
@@ -392,7 +442,7 @@ export default function Scene3D({ floor, walls }: Scene3DProps) {
                 step={1}
               />
 
-              <Label>Point Position</Label>
+              <Label>Point Light Position</Label>
               <div className="flex gap-2">
                 {["X", "Y", "Z"].map((axis, i) => (
                   <Input
@@ -420,7 +470,9 @@ export default function Scene3D({ floor, walls }: Scene3DProps) {
         <div className="absolute right-5 top-1/2 -translate-y-1/2 z-20 bg-white p-4 rounded shadow">
           <Label className="mb-2 block">Wall Color</Label>
           <HexColorPicker
-            color={walls.find((w) => w.id === selectedWall)?.color || "#ffffff"}
+            color={
+              wallsState.find((w) => w.id === selectedWall)?.color || "#ffffff"
+            }
             onChange={updateWallColor}
           />
           <Button className="mt-2" onClick={() => setSelectedWall(null)}>

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Image from "next/image";
 
 import { useDispatch, useSelector } from "react-redux";
 import { RootState, AppDispatch } from "../lib/store";
@@ -15,7 +16,7 @@ import {
   TooltipTrigger,
   TooltipContent,
 } from "@/components/ui/tooltip";
-import Image from "next/image";
+
 import { ScrollArea } from "./ui/scroll-area";
 
 const FurnitureList = ({

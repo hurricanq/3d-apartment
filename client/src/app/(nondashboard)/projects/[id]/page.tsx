@@ -58,21 +58,23 @@ const FloorPlanPage = () => {
 
   // Load rooms from data of selectedDesign
   useEffect(() => {
-    if (selectedDesign?.data?.rooms?.length > 0) {
-      const room = selectedDesign?.data.rooms[0];
+    const rooms = selectedDesign?.data?.rooms;
 
-      // Load floor dimensions
-      if (room.floors?.length > 0) {
-        setFloorDimensions({
-          width: room.floors[0].dimensions.width,
-          height: room.floors[0].dimensions.height,
-        });
-      }
+    if (!rooms || rooms.length === 0) return;
 
-      // Load walls
-      if (room.walls?.length > 0) {
-        setWalls(room.walls);
-      }
+    const room = rooms[0];
+
+    // Load floor dimensions
+    if (room.floors && room.floors.length > 0) {
+      setFloorDimensions({
+        width: room.floors[0].dimensions.width,
+        height: room.floors[0].dimensions.height,
+      });
+    }
+
+    // Load walls
+    if (room.walls && room.walls.length > 0) {
+      setWalls(room.walls);
     }
   }, [selectedDesign]);
 

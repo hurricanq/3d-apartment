@@ -1,7 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import axios from "axios";
-
-export type DesignData = Record<string, unknown>;
+import { DesignData } from "@/lib/types/design";
 
 export interface Design {
   id: number;

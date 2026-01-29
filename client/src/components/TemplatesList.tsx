@@ -12,13 +12,15 @@ import { createDesign } from "../lib/features/design/designSlice";
 import LoadingSpinner from "./LoadingSpinner";
 import { Button } from "./ui/button";
 
+import { DesignData } from "@/lib/types/design";
+
 interface Template {
   id: number;
   createdAt: string;
   updatedAt: string;
   name: string;
   description: string;
-  data: Record<string, unknown>;
+  data: DesignData;
 }
 
 const TemplatesList = () => {

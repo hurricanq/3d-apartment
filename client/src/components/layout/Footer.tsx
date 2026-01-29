@@ -1,7 +1,7 @@
 import React from "react";
 import Link from "next/link";
 
-import { Aperture, Heart } from "lucide-react";
+import { Aperture } from "lucide-react";
 
 const Footer = () => {
   return (

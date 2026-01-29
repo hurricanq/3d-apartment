@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Stage, Layer, Rect, Line, Group } from "react-konva";
+import { Stage, Layer, Rect, Line } from "react-konva";
 import { useParams } from "next/navigation";
 import FloorPlanGrid from "./FloorPlanGrid";
 import Konva from "konva";
@@ -16,10 +16,7 @@ import { Button } from "@/components/ui/button";
 // Redux
 import { useDispatch, useSelector } from "react-redux";
 import { RootState, AppDispatch } from "@/lib/store";
-import {
-  fetchDesignById,
-  updateDesign,
-} from "@/lib/features/design/designSlice";
+import { fetchDesignById } from "@/lib/features/design/designSlice";
 
 const FloorPlanPage = () => {
   const { id } = useParams();

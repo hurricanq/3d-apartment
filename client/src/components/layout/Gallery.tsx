@@ -43,7 +43,7 @@ const Gallery = () => {
           <p className="w-1/2">
             Our platform uses WebGPU-accelerated rendering to give you a
             real-time look at your home with lighting and textures so accurate,
-            you'll try to sit on the virtual couch.
+            you will try to sit on the virtual couch.
           </p>
         </motion.div>
 

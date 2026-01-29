@@ -13,7 +13,7 @@ import {
 
 import Floor3D from "./Floor3D";
 import Wall3D from "./Wall3D";
-import Model from "@/components/Model3";
+import Model from "@/components/Model";
 import FPSCamera from "@/components/FPSCamera";
 
 import { Button } from "@/components/ui/button";

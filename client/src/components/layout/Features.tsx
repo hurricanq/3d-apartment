@@ -47,8 +47,8 @@ const Features = () => {
             transition={{ duration: 2.0, ease: "easeOut" }}
           >
             Aperoom is a cutting-edge web application designed to turn your
-            vague "I think this fits here" ideas into stunning, photorealistic
-            3D realities.
+            vague &quot;I think this fits here&quot; ideas into stunning,
+            photorealistic 3D realities.
           </motion.p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">

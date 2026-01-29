@@ -1,72 +1,71 @@
 "use client";
 
-import React, { useState, useEffect, forwardRef } from 'react';
-import { useGLTF } from '@react-three/drei';
-import * as THREE from 'three';
+import React, { useState, useEffect, forwardRef, useMemo } from "react";
+import { useGLTF } from "@react-three/drei";
+import * as THREE from "three";
 
 interface ModelProps {
-    url: string;
-    onClick: () => void;
-    position?: [number, number, number];
-    scale?: [number, number, number];
-    rotation?: [number, number, number];
+  url: string;
+  onClick: () => void;
+  children: any;
+  position?: [number, number, number];
+  scale?: [number, number, number];
+  rotation?: [number, number, number];
 }
 
-const Model = forwardRef<THREE.Group, ModelProps>(({ url, onClick, ...props }, ref) => {
-    const { scene } = useGLTF(url);
-    const [hovered, setHovered] = useState(false)
+const Model = forwardRef<THREE.Group, ModelProps>(
+  ({ url, onClick, children, ...props }, ref) => {
+    const gltf = useGLTF(url);
 
-    /*
-    scene.traverse((obj: any) => {
+    // Clone scene AND clone all materials
+    const clonedScene = useMemo(() => {
+      const clone = gltf.scene.clone(true);
+
+      clone.traverse((obj: any) => {
         if (obj.isMesh) {
-            obj.castShadow = true;
+          obj.material = obj.material.clone(); // Clone material for hover effects
+          obj.castShadow = true;
         }
-    });
+      });
+
+      return clone;
+    }, [gltf]);
+
+    const [hovered, setHovered] = useState(false);
 
     useEffect(() => {
-        scene.traverse((obj) => {
-            if ((obj as THREE.Mesh).isMesh) {
-                const mesh = obj as THREE.Mesh
-                const mat = mesh.material as THREE.MeshStandardMaterial
-                if (mat.color) {
-                    mat.color.set(hovered ? '#ffcc00' : '#ffffff')
-                }
-            }
-        })
-    }, [hovered, scene])
-    */
+      clonedScene.traverse((obj: any) => {
+        if (obj.isMesh) {
+          const mat = obj.material;
 
-    // Update color based on hover
-    useEffect(() => {
-        scene.traverse((obj: any) => {
-            if (obj.isMesh) {
-                obj.castShadow = true;
+          if (mat.color) {
+            mat.color.set(hovered ? "#00ff00" : "#ffffff");
+          }
+        }
+      });
+    }, [hovered, clonedScene]);
 
-                const mesh = obj
-                const mat = mesh.material
-                if (mat.color) {
-                    mat.color.set(hovered ? '#00ff00' : '#ffffff')
-                }
-            }
-        })
-    }, [hovered, scene])
-
-    return <primitive
-                ref={ref}
-                object={scene}
-                onPointerDown={onClick}
-                {...props}
-                onPointerOver={(e: any) => {
-                    e.stopPropagation()
-                    setHovered(true)
-                    document.body.style.cursor = 'pointer'
-                }}
-                onPointerOut={(e: any) => {
-                    e.stopPropagation()
-                    setHovered(false)
-                    document.body.style.cursor = 'default'
-                }} 
-            />;
-});
+    return (
+      <group
+        ref={ref}
+        {...props}
+        onPointerDown={onClick}
+        onPointerOver={(e: any) => {
+          e.stopPropagation();
+          setHovered(true);
+          document.body.style.cursor = "pointer";
+        }}
+        onPointerOut={(e: any) => {
+          e.stopPropagation();
+          setHovered(false);
+          document.body.style.cursor = "default";
+        }}
+      >
+        <primitive object={clonedScene} />
+        {children}
+      </group>
+    );
+  },
+);
 
 export default Model;

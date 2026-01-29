@@ -12,16 +12,16 @@ import categoryRoutes from "./routes/categoryRoutes";
 // Configurations
 const app = express();
 app.use(express.json());
-app.use(cors({
-    origin: [
-        'http://localhost:3000',
-    ],
+app.use(
+  cors({
+    origin: ["https://3d-apartment-silk.vercel.app/", "http://localhost:3000"],
     credentials: true,
-}));
+  }),
+);
 
 // Home route (test)
 app.get("/", (_, res) => {
-    res.send("This is home route");
+  res.send("This is home route");
 });
 
 app.use("/users", userRoutes);
@@ -33,5 +33,5 @@ app.use("/categories", categoryRoutes);
 // Server
 const port = Number(process.env.PORT) || 3002;
 app.listen(port, () => {
-    console.log(`Server running on port ${port}`);
+  console.log(`Server running on port ${port}`);
 });

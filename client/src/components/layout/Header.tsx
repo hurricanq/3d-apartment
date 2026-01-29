@@ -21,7 +21,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import SyncButton from "@/components/SyncButton";
+import SyncButton from "@/components/buttons/SyncButton";
 import { Aperture, Menu } from "lucide-react";
 
 const Header = () => {

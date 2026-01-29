@@ -65,15 +65,15 @@ const Templates = ({ search, sort }: TemplatesProps) => {
   if (error) return <p>{error}</p>;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
       {processedTemplates.map((tem) => (
         <div key={tem.id} className="flex flex-col gap-3">
           <Link
             href={`/templates/${tem.id}`}
-            className="px-3 py-3 rounded bg-white shadow hover:bg-gray-100"
+            className="overflow-hidden rounded bg-white shadow hover:bg-gray-100"
           >
             <Image
-              src="/placeholder.png"
+              src="/renders/placeholder.png"
               width={300}
               height={300}
               alt="Image of the template"

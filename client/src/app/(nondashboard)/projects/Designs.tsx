@@ -60,26 +60,26 @@ const Designs = ({ search, sort }: DesignsProps) => {
   if (error) return <p>{error}</p>;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
       {processedDesigns.map((des) => (
         <div key={des.id} className="flex flex-col gap-3">
           <Link
             href={`/projects/${des.id}`}
-            className="px-3 py-3 rounded bg-white shadow hover:bg-gray-100"
+            className="rounded overflow-hidden aspect-square bg-white shadow hover:bg-gray-100"
           >
             <Image
-              src="/placeholder.png"
+              src="/renders/placeholder.png"
               width={300}
               height={300}
               alt="Image of the design"
-              className="hover:scale-110 transition-transform"
+              className="object-cover hover:scale-110 transition-transform"
             />
           </Link>
 
           {/* Design Name */}
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col space-y-1">
             <h4 className="font-semibold line-clamp-1">{des.name}</h4>
-            <p className="text-gray-400">
+            <p className="text-neutral-400">
               Last edited: {formatDate(des.updatedAt)}
             </p>
           </div>
@@ -95,7 +95,7 @@ const Designs = ({ search, sort }: DesignsProps) => {
       ))}
 
       {processedDesigns.length === 0 && (
-        <p className="col-span-3 text-gray-400">No designs found.</p>
+        <p className="col-span-3 text-neutral-400">No designs found.</p>
       )}
     </div>
   );

@@ -53,7 +53,7 @@ const Projects = () => {
                 placeholder="Search designs..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full px-3 py-1.5 rounded-md bg-gray-900 text-white focus:outline-white transition-colors"
+                className="w-full px-3 py-1.5 rounded-md bg-neutral-800 text-white focus:outline-white transition-colors"
               />
 
               {/* Sort dropdown */}

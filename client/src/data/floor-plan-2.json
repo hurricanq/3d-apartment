@@ -1,0 +1,93 @@
+{
+  "name": "Basic Room",
+  "description": "1 room.",
+  "data": {
+    "rooms": [
+      {
+        "id": "room",
+        "name": "Room",
+        "floors": [
+          {
+            "id": "rf-1",
+            "dimensions": {
+              "width": 8.0,
+              "height": 6.0
+            },
+            "color": "#FFFFFF",
+            "material": "Maple"
+          }
+        ],
+        "walls": [
+          {
+            "id": "rw-f",
+            "dimensions": {
+              "height": 3.0,
+              "depth": 0.1
+            },
+            "start": {
+              "x": 0.0,
+              "y": 0.0
+            },
+            "end": {
+              "x": 8.0,
+              "y": 0.0
+            },
+            "color": "#FFFFFF",
+            "material": "Plastic"
+          },
+          {
+            "id": "rw-b",
+            "dimensions": {
+              "height": 3.0,
+              "depth": 0.1
+            },
+            "start": {
+              "x": 0.0,
+              "y": 6.0
+            },
+            "end": {
+              "x": 8.0,
+              "y": 6.0
+            },
+            "color": "#FFFFFF",
+            "material": "Plastic"
+          },
+          {
+            "id": "rw-l",
+            "dimensions": {
+              "height": 3.0,
+              "depth": 0.1
+            },
+            "start": {
+              "x": 0.0,
+              "y": 0.0
+            },
+            "end": {
+              "x": 0.0,
+              "y": 6.0
+            },
+            "color": "#FFFFFF",
+            "material": "Plastic"
+          },
+          {
+            "id": "rw-r",
+            "dimensions": {
+              "height": 3.0,
+              "depth": 0.1
+            },
+            "start": {
+              "x": 8.0,
+              "y": 0.0
+            },
+            "end": {
+              "x": 8.0,
+              "y": 6.0
+            },
+            "color": "#FFFFFF",
+            "material": "Plastic"
+          }
+        ]
+      }
+    ]
+  }
+}

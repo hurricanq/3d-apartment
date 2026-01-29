@@ -1,7 +1,7 @@
 import { useUser } from "@clerk/nextjs";
 import axios from "axios";
 
-import { Button } from "./ui/button";
+import { Button } from "../ui/button";
 
 export default function SyncButton() {
   const { user } = useUser();

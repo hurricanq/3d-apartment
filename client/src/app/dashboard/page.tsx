@@ -12,9 +12,11 @@ import {
 } from "@/components/ui/select";
 import Templates from "./Templates";
 
+type SortOption = "newest" | "az";
+
 const Dashboard = () => {
   const [search, setSearch] = useState("");
-  const [sort, setSort] = useState<"newest" | "az">("newest");
+  const [sort, setSort] = useState<SortOption>("newest");
 
   return (
     <>
@@ -46,7 +48,7 @@ const Dashboard = () => {
               {/* Sort dropdown */}
               <Select
                 value={sort}
-                onValueChange={(v: any) => setSort(v as any)}
+                onValueChange={(v: SortOption) => setSort(v)}
               >
                 <SelectTrigger className="w-40 bg-white text-black">
                   <SelectValue placeholder="Sort by" />

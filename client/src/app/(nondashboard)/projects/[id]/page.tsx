@@ -197,7 +197,7 @@ const FloorPlanPage = () => {
 
   /* ---------------- Mouse Move (Preview) ---------------- */
 
-  const handleMouseMove = (e: Konva.KonvaEventObject<MouseEvent>) => {
+  const handleMouseMove = () => {
     if (toolMode !== "draw-wall") return;
     if (!drawingStart) return;
 

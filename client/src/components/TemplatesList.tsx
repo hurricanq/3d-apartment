@@ -12,6 +12,15 @@ import { createDesign } from "../lib/features/design/designSlice";
 import LoadingSpinner from "./LoadingSpinner";
 import { Button } from "./ui/button";
 
+interface Template {
+  id: number;
+  createdAt: string;
+  updatedAt: string;
+  name: string;
+  description: string;
+  data: Record<string, unknown>;
+}
+
 const TemplatesList = () => {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
@@ -32,7 +41,7 @@ const TemplatesList = () => {
   if (error) return <p className="text-red-600">{error}</p>;
 
   // Create design from template
-  const handleCreate = (template: any) => {
+  const handleCreate = (template: Template) => {
     const uniqueName = `New ${template.name}`;
 
     if (!user) return;
@@ -58,7 +67,7 @@ const TemplatesList = () => {
       {createError && <p className="text-sm text-red-600">{createError}</p>}
 
       <div className="grid grid-cols-1 gap-2">
-        {templates.map((temp: any) => (
+        {templates.map((temp: Template) => (
           <Button
             key={temp.id}
             variant="outline"

@@ -1,12 +1,14 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import axios from "axios";
 
+export type DesignData = Record<string, unknown>;
+
 export interface Design {
   id: number;
   createdAt: string;
   updatedAt: string;
   name: string;
-  data: any;
+  data: DesignData;
   userId: string;
 }
 
@@ -25,7 +27,7 @@ export interface CreateDesignDTO {
 
 export interface UpdateDesignDTO {
   name?: string;
-  data?: any;
+  data?: DesignData;
 }
 
 const initialState: DesignState = {
@@ -49,7 +51,7 @@ export const fetchDesignById = createAsyncThunk(
   async (id: number) => {
     const response = await axios.get(`${API_BASE_URL}/${id}`);
     return response.data as Design;
-  }
+  },
 );
 
 // Create new design
@@ -73,7 +75,7 @@ export const createDesign = createAsyncThunk(
         : now;
 
     return data;
-  }
+  },
 );
 
 // Update design
@@ -82,7 +84,7 @@ export const updateDesign = createAsyncThunk(
   async ({ id, data }: { id: number; data: UpdateDesignDTO }) => {
     const response = await axios.put(`${API_BASE_URL}/${id}`, data);
     return response.data as Design;
-  }
+  },
 );
 
 // Delete design
@@ -91,7 +93,7 @@ export const deleteDesign = createAsyncThunk(
   async (id: number) => {
     await axios.delete(`${API_BASE_URL}/${id}`);
     return id; // return the deleted design ID
-  }
+  },
 );
 
 const designSlice = createSlice({
@@ -114,7 +116,7 @@ const designSlice = createSlice({
         (state, action: PayloadAction<Design[]>) => {
           state.loading = false;
           state.designs = action.payload;
-        }
+        },
       )
       .addCase(fetchDesigns.rejected, (state, action) => {
         state.loading = false;
@@ -132,7 +134,7 @@ const designSlice = createSlice({
         (state, action: PayloadAction<Design>) => {
           state.loading = false;
           state.selectedDesign = action.payload;
-        }
+        },
       )
       .addCase(fetchDesignById.rejected, (state, action) => {
         state.loading = false;
@@ -144,7 +146,7 @@ const designSlice = createSlice({
         createDesign.fulfilled,
         (state, action: PayloadAction<Design>) => {
           state.designs.push(action.payload);
-        }
+        },
       )
 
       // Update
@@ -152,13 +154,13 @@ const designSlice = createSlice({
         updateDesign.fulfilled,
         (state, action: PayloadAction<Design>) => {
           const index = state.designs.findIndex(
-            (p) => p.id === action.payload.id
+            (p) => p.id === action.payload.id,
           );
           if (index !== -1) state.designs[index] = action.payload;
           if (state.selectedDesign?.id === action.payload.id) {
             state.selectedDesign = action.payload;
           }
-        }
+        },
       )
 
       // Delete
@@ -166,7 +168,7 @@ const designSlice = createSlice({
         deleteDesign.fulfilled,
         (state, action: PayloadAction<number>) => {
           state.designs = state.designs.filter((p) => p.id !== action.payload);
-        }
+        },
       );
   },
 });

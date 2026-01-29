@@ -1,13 +1,20 @@
 "use client";
 
-import React, { useState, useEffect, forwardRef, useMemo } from "react";
+import React, {
+  useState,
+  useEffect,
+  forwardRef,
+  useMemo,
+  ReactNode,
+} from "react";
+import { ThreeEvent } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 
 interface ModelProps {
   url: string;
   onClick: () => void;
-  children: any;
+  children?: ReactNode;
   position?: [number, number, number];
   scale?: [number, number, number];
   rotation?: [number, number, number];
@@ -21,10 +28,11 @@ const Model = forwardRef<THREE.Group, ModelProps>(
     const clonedScene = useMemo(() => {
       const clone = gltf.scene.clone(true);
 
-      clone.traverse((obj: any) => {
-        if (obj.isMesh) {
-          obj.material = obj.material.clone(); // Clone material for hover effects
-          obj.castShadow = true;
+      clone.traverse((obj: THREE.Object3D) => {
+        if ((obj as THREE.Mesh).isMesh) {
+          const mesh = obj as THREE.Mesh;
+          mesh.material = (mesh.material as THREE.Material).clone();
+          mesh.castShadow = true;
         }
       });
 
@@ -34,12 +42,13 @@ const Model = forwardRef<THREE.Group, ModelProps>(
     const [hovered, setHovered] = useState(false);
 
     useEffect(() => {
-      clonedScene.traverse((obj: any) => {
-        if (obj.isMesh) {
-          const mat = obj.material;
+      clonedScene.traverse((obj: THREE.Object3D) => {
+        if ((obj as THREE.Mesh).isMesh) {
+          const mesh = obj as THREE.Mesh;
+          const material = mesh.material as THREE.MeshStandardMaterial;
 
-          if (mat.color) {
-            mat.color.set(hovered ? "#00ff00" : "#ffffff");
+          if (material.color) {
+            material.color.set(hovered ? "#00ff00" : "#ffffff");
           }
         }
       });
@@ -50,12 +59,12 @@ const Model = forwardRef<THREE.Group, ModelProps>(
         ref={ref}
         {...props}
         onPointerDown={onClick}
-        onPointerOver={(e: any) => {
+        onPointerOver={(e: ThreeEvent<PointerEvent>) => {
           e.stopPropagation();
           setHovered(true);
           document.body.style.cursor = "pointer";
         }}
-        onPointerOut={(e: any) => {
+        onPointerOut={(e: ThreeEvent<PointerEvent>) => {
           e.stopPropagation();
           setHovered(false);
           document.body.style.cursor = "default";
@@ -67,5 +76,7 @@ const Model = forwardRef<THREE.Group, ModelProps>(
     );
   },
 );
+
+Model.displayName = "Model";
 
 export default Model;

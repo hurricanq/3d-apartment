@@ -1,13 +1,15 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import axios from "axios";
 
+export type DesignData = Record<string, unknown>;
+
 export interface Template {
   id: number;
   createdAt: string;
   updatedAt: string;
   name: string;
   description: string;
-  data: any;
+  data: DesignData;
 }
 
 interface TemplateState {
@@ -27,7 +29,7 @@ const initialState: TemplateState = {
 export interface UpdateTemplateDTO {
   name?: string;
   description?: string;
-  data?: any;
+  data?: DesignData;
 }
 
 const API_BASE_URL = `${process.env.NEXT_PUBLIC_API_URL}/templates`;
@@ -38,7 +40,7 @@ export const fetchTemplates = createAsyncThunk(
   async () => {
     const response = await axios.get(API_BASE_URL);
     return response.data as Template[];
-  }
+  },
 );
 
 // Fetch template by ID
@@ -47,7 +49,7 @@ export const fetchTemplateById = createAsyncThunk(
   async (id: string) => {
     const response = await axios.get(`${API_BASE_URL}/${id}`);
     return response.data as Template;
-  }
+  },
 );
 
 // Create new template
@@ -56,7 +58,7 @@ export const createTemplate = createAsyncThunk(
   async (templateData: Omit<Template, "id" | "createdAt" | "updatedAt">) => {
     const response = await axios.post(API_BASE_URL, templateData);
     return response.data as Template;
-  }
+  },
 );
 
 // Update template
@@ -65,7 +67,7 @@ export const updateTemplate = createAsyncThunk(
   async ({ id, data }: { id: number; data: UpdateTemplateDTO }) => {
     const response = await axios.put(`${API_BASE_URL}/${id}`, data);
     return response.data as Template;
-  }
+  },
 );
 
 // Delete template
@@ -74,7 +76,7 @@ export const deleteTemplate = createAsyncThunk(
   async (id: number) => {
     await axios.delete(`${API_BASE_URL}/${id}`);
     return id; // return the deleted template ID
-  }
+  },
 );
 
 const templateSlice = createSlice({
@@ -97,7 +99,7 @@ const templateSlice = createSlice({
         (state, action: PayloadAction<Template[]>) => {
           state.loading = false;
           state.templates = action.payload;
-        }
+        },
       )
       .addCase(fetchTemplates.rejected, (state, action) => {
         state.loading = false;
@@ -109,7 +111,7 @@ const templateSlice = createSlice({
         createTemplate.fulfilled,
         (state, action: PayloadAction<Template>) => {
           state.templates.push(action.payload);
-        }
+        },
       )
 
       // Update
@@ -117,13 +119,13 @@ const templateSlice = createSlice({
         updateTemplate.fulfilled,
         (state, action: PayloadAction<Template>) => {
           const index = state.templates.findIndex(
-            (p) => p.id === action.payload.id
+            (p) => p.id === action.payload.id,
           );
           if (index !== -1) state.templates[index] = action.payload;
           if (state.selectedTemplate?.id === action.payload.id) {
             state.selectedTemplate = action.payload;
           }
-        }
+        },
       )
 
       // Delete
@@ -131,9 +133,9 @@ const templateSlice = createSlice({
         deleteTemplate.fulfilled,
         (state, action: PayloadAction<number>) => {
           state.templates = state.templates.filter(
-            (p) => p.id !== action.payload
+            (p) => p.id !== action.payload,
           );
-        }
+        },
       );
   },
 });

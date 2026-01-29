@@ -2,7 +2,7 @@
 
 import React, { useRef, useState } from "react";
 import * as THREE from "three";
-import { Canvas, useThree } from "@react-three/fiber";
+import { Canvas } from "@react-three/fiber";
 import {
   OrbitControls,
   TransformControls,
@@ -38,8 +38,7 @@ import {
 import { Floor, Wall } from "./types";
 import FurnitureList from "@/components/FurnitureList";
 import MaterialList from "@/components/MaterialList";
-
-/* ---------------- TYPES ---------------- */
+import { TransformControls as TransformControlsImpl } from "three-stdlib";
 
 interface ModelData {
   id: number;
@@ -55,17 +54,13 @@ interface Scene3DProps {
   walls: Wall[];
 }
 
-/* ---------------- COMPONENT ---------------- */
-
 export default function Scene3D({ floor, walls }: Scene3DProps) {
-  /* ----------- SELECTION STATES ----------- */
-
+  // Selection states
   const [selectedModel, setSelectedModel] = useState<number | null>(null);
   const [selectedWall, setSelectedWall] = useState<string | null>(null);
   const [hoveredWall, setHoveredWall] = useState<string | null>(null);
 
-  /* ----------- CAMERA & UI MODES ----------- */
-
+  // UI modes
   const [cameraMode, setCameraMode] = useState<"orbit" | "fps">("orbit");
   const [transformMode, setTransformMode] = useState<
     "translate" | "rotate" | "scale"
@@ -73,28 +68,24 @@ export default function Scene3D({ floor, walls }: Scene3DProps) {
 
   const [dayNight, setDayNight] = useState<"day" | "night">("day");
 
-  /* ----------- LIGHT CONTROLS ----------- */
-
+  // Light controls
   const [ambientIntensity, setAmbientIntensity] = useState(1);
   const [pointIntensity, setPointIntensity] = useState(20);
   const [pointPosition, setPointPosition] = useState<[number, number, number]>([
     4, 2, 3,
   ]);
 
-  /* ----------- REFS ----------- */
-
-  const transformRef = useRef<any>(null);
+  // Refs
+  const transformRef = useRef<TransformControlsImpl>(null);
   const modelRefs = useRef(
     new Map<number, React.RefObject<THREE.Group | null>>(),
   );
-  const glRef = useRef<THREE.WebGLRenderer | null>(null); // New ref for the renderer
+  const glRef = useRef<THREE.WebGLRenderer | null>(null);
 
   const [models, setModels] = useState<ModelData[]>([]);
   const [renderMode, setRenderMode] = useState(false);
 
   const [wallsState, setWallsState] = useState(walls);
-
-  /* ----------- MODEL HELPERS ----------- */
 
   // Add a new model
   const addModel = (modelUrl: string): void => {
@@ -168,7 +159,9 @@ export default function Scene3D({ floor, walls }: Scene3DProps) {
   const updateModelColor = (color: string): void => {
     if (!selectedModel) return;
 
-    models.map((m: any) => (m.id === selectedModel ? { ...m, color } : m));
+    setModels((prev) =>
+      prev.map((m) => (m.id === selectedModel ? { ...m, color } : m)),
+    );
   };
 
   const clampPosition = (object: THREE.Object3D): void => {
@@ -183,7 +176,6 @@ export default function Scene3D({ floor, walls }: Scene3DProps) {
           if (group) {
             return {
               ...m,
-              // These lines read the current Three.js values and update the state
               position: [
                 group.position.x,
                 group.position.y,
@@ -207,7 +199,7 @@ export default function Scene3D({ floor, walls }: Scene3DProps) {
     );
   };
 
-  // New function to export the scene as an image
+  // Export scene as image
   const exportImage = (): void => {
     if (glRef.current) {
       const link = document.createElement("a");
@@ -217,8 +209,7 @@ export default function Scene3D({ floor, walls }: Scene3DProps) {
     }
   };
 
-  /* ---------------- RENDER ---------------- */
-
+  // Render
   return (
     <>
       <Canvas
@@ -305,7 +296,9 @@ export default function Scene3D({ floor, walls }: Scene3DProps) {
                 setSelectedWall(wall.id);
                 setSelectedModel(null);
               }}
-              onHover={(hover: any) => setHoveredWall(hover ? wall.id : null)}
+              onHover={(hover: boolean) =>
+                setHoveredWall(hover ? wall.id : null)
+              }
             />
           );
         })}
@@ -349,7 +342,10 @@ export default function Scene3D({ floor, walls }: Scene3DProps) {
             ref={transformRef}
             object={modelRefs.current.get(selectedModel)!.current!}
             mode={transformMode}
-            onObjectChange={(e: any) => clampPosition(e.target.object)}
+            onObjectChange={() => {
+              const obj = modelRefs.current.get(selectedModel!)?.current;
+              if (obj) clampPosition(obj);
+            }}
           />
         )}
       </Canvas>
@@ -451,7 +447,11 @@ export default function Scene3D({ floor, walls }: Scene3DProps) {
                     value={pointPosition[i]}
                     onChange={(e) => {
                       const v = parseFloat(e.target.value) || 0;
-                      const arr = [...pointPosition] as any;
+                      const arr = [...pointPosition] as [
+                        number,
+                        number,
+                        number,
+                      ];
                       arr[i] = v;
                       setPointPosition(arr);
                     }}

@@ -1,11 +1,15 @@
-// types.ts
-
 export type ToolMode = "select" | "draw-wall";
 
 export interface Point {
   x: number;
   y: number;
 }
+
+export type Floor = {
+  width: number;
+  height: number;
+  material: string;
+};
 
 export type Wall = {
   id: string;

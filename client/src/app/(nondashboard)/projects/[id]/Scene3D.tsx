@@ -35,7 +35,7 @@ import {
   CameraIcon,
 } from "lucide-react";
 
-import { Wall } from "./types";
+import { Floor, Wall } from "./types";
 import FurnitureList from "@/components/FurnitureList";
 import MaterialList from "@/components/MaterialList";
 
@@ -51,7 +51,7 @@ interface ModelData {
 }
 
 interface Scene3DProps {
-  floor: { width: number; height: number; material: string };
+  floor: Floor;
   walls: Wall[];
 }
 
@@ -261,7 +261,7 @@ export default function Scene3D({ floor, walls }: Scene3DProps) {
 
         <PerspectiveCamera
           makeDefault={renderMode}
-          position={[15, 8, 15]}
+          position={[10, 10, 10]}
           fov={45}
           near={0.1}
           far={1000}
@@ -356,7 +356,7 @@ export default function Scene3D({ floor, walls }: Scene3DProps) {
 
       {/* ---------- UI TOOLBAR ---------- */}
 
-      <div className="absolute top-28 left-6 p-2 z-10 flex gap-2">
+      <div className="absolute top-32 left-6 z-10 flex gap-2">
         {/* Add furniture */}
         <FurnitureList onClick={addModel} />
 

@@ -288,43 +288,41 @@ const FloorPlanPage = () => {
     <div className="relative min-h-screen">
       {/* Toolbar */}
       <div className="absolute top-18 left-6 z-10 flex gap-2">
-        {viewMode === "2d" ? (
-          <div>
-            <Button
-              variant={`${toolMode === "draw-wall" ? "secondary" : "default"}`}
-              onClick={() => {
-                setToolMode("draw-wall");
-                setDrawingStart(null);
-                setPreviewEnd(null);
-              }}
-            >
-              Draw Walls
-            </Button>
+        <Button onClick={handleSave}>Save Design</Button>
 
-            <Button
-              variant={`${toolMode === "select" ? "secondary" : "default"}`}
-              onClick={() => {
-                setToolMode("select");
-                setDrawingStart(null);
-                setPreviewEnd(null);
-              }}
-            >
-              Select
-            </Button>
-          </div>
-        ) : (
-          <div></div>
-        )}
+        <div>
+          <Button
+            disabled={viewMode === "2d" ? false : true}
+            variant={`${toolMode === "draw-wall" ? "secondary" : "default"}`}
+            onClick={() => {
+              setToolMode("draw-wall");
+              setDrawingStart(null);
+              setPreviewEnd(null);
+            }}
+          >
+            Draw Walls
+          </Button>
+
+          <Button
+            disabled={viewMode === "2d" ? false : true}
+            variant={`${toolMode === "select" ? "secondary" : "default"}`}
+            onClick={() => {
+              setToolMode("select");
+              setDrawingStart(null);
+              setPreviewEnd(null);
+            }}
+          >
+            Select
+          </Button>
+        </div>
 
         <Button
           onClick={() => {
             setViewMode((prev) => (prev === "2d" ? "3d" : "2d"));
           }}
         >
-          {viewMode === "2d" ? "Switch to 3D View" : "Back to 2D Editor"}
+          {viewMode === "2d" ? "3D Mode" : "2D Mode"}
         </Button>
-
-        <Button onClick={handleSave}>Save Design</Button>
       </div>
 
       {toolMode === "select" && selectedWallId && deleteButtonPos && (

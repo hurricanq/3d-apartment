@@ -1,13 +1,8 @@
 import { useTexture } from "@react-three/drei";
 import * as THREE from "three";
+import { Floor } from "./types";
 
-interface Floor3DProps {
-  width: number; // meters
-  height: number; // meters
-  material: string;
-}
-
-export default function Floor3D({ width, height, material }: Floor3DProps) {
+export default function Floor3D({ width, height, material }: Floor) {
   const floorTexture = useTexture(`/textures/${material}.jpg`);
   floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping;
   floorTexture.repeat.set(10, 10);

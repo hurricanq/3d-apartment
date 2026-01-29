@@ -1,16 +1,12 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { useTexture } from "@react-three/drei";
 import * as THREE from "three";
 
+import { Wall } from "./types";
+import { wallToMeshData } from "./wallToMeshData";
+
 interface Wall3DProps {
-  wall: {
-    id?: string;
-    dimensions: { height: number; depth: number };
-    start: { x: number; y: number };
-    end: { x: number; y: number };
-    color?: string;
-    material?: string;
-  };
+  wall: Wall;
   highlighted?: boolean;
   onClick?: () => void;
   onHover?: (hover: boolean) => void;
@@ -22,15 +18,7 @@ export default function Wall3D({
   onClick,
   onHover,
 }: Wall3DProps) {
-  const dx = wall.end.x - wall.start.x;
-  const dy = wall.end.y - wall.start.y;
-
-  const length = Math.sqrt(dx * dx + dy * dy);
-  const angle = Math.atan2(dy, dx);
-
-  // Center position in XZ plane
-  const cx = (wall.start.x + wall.end.x) / 2;
-  const cz = (wall.start.y + wall.end.y) / 2;
+  const { length, angle, center } = wallToMeshData(wall);
 
   const wallTexture = useTexture(`/textures/${wall.material}.jpg`);
   wallTexture.wrapS = wallTexture.wrapT = THREE.RepeatWrapping;
@@ -38,7 +26,7 @@ export default function Wall3D({
 
   return (
     <mesh
-      position={[cx, wall.dimensions.height / 2, cz]}
+      position={[center.x, wall.dimensions.height / 2, center.z]}
       rotation={[0, -angle, 0]}
       receiveShadow
       castShadow

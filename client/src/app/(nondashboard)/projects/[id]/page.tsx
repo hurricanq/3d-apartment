@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Stage, Layer, Rect, Line } from "react-konva";
 import { useParams } from "next/navigation";
 import FloorPlanGrid from "./FloorPlanGrid";
@@ -8,7 +8,7 @@ import Konva from "konva";
 
 import { snapPoint } from "./snap";
 import WallLayer from "./WallLayer";
-import { ToolMode, Wall, Point } from "./types";
+import { ToolMode, Wall, Point, Window } from "./types";
 import Scene3D from "./Scene3D";
 
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,8 @@ import { Button } from "@/components/ui/button";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState, AppDispatch } from "@/lib/store";
 import { fetchDesignById } from "@/lib/features/design/designSlice";
+import WindowLayer from "./WindowLayer";
+import { findNearestWall } from "./pointToSegment";
 
 const FloorPlanPage = () => {
   const { id } = useParams();
@@ -35,6 +37,23 @@ const FloorPlanPage = () => {
   const [toolMode, setToolMode] = useState<ToolMode>("select");
   const [hoveredWallId, setHoveredWallId] = useState<string | null>(null);
   const [selectedWallId, setSelectedWallId] = useState<string | null>(null);
+
+  const [windows, setWindows] = useState<Window[]>([
+    {
+      id: "win-1",
+      wallId: "rw-f",
+      offset: 1.5, // meters from wall start
+      width: 1.2,
+      height: 1.2,
+      sillHeight: 0.9, // from floor
+    },
+  ]);
+  const [windowPreview, setWindowPreview] = useState<{
+    wallId: string;
+    offset: number;
+    width: number;
+  } | null>(null);
+  const [selectedWindowId, setSelectedWindowId] = useState<string | null>(null);
 
   // Floor dimensions (width, height)
   const [floorDimensions, setFloorDimensions] = useState({
@@ -159,8 +178,7 @@ const FloorPlanPage = () => {
   /* ---------------- Mouse Down ---------------- */
 
   const handleMouseDown = (e: Konva.KonvaEventObject<MouseEvent>) => {
-    if (toolMode !== "draw-wall") return;
-
+    console.log("toolMode:", toolMode);
     const stage = stageRef.current;
     if (!stage) return;
 
@@ -170,39 +188,78 @@ const FloorPlanPage = () => {
     const world = getWorldPoint(pointer);
     if (!world) return;
 
-    const snapped = snapPoint(world, GRID_STEP);
+    /* =======================
+     DRAW WALL MODE
+     ======================= */
+    if (toolMode === "draw-wall") {
+      const snapped = snapPoint(world, GRID_STEP);
 
-    // First click → start wall
-    if (!drawingStart) {
-      setDrawingStart(snapped);
-      setPreviewEnd(snapped);
+      // First click → start wall
+      if (!drawingStart) {
+        setDrawingStart(snapped);
+        setPreviewEnd(snapped);
+        return;
+      }
+
+      // Second click → finish wall
+      const newWall: Wall = {
+        id: crypto.randomUUID(),
+        start: drawingStart,
+        end: snapped,
+        dimensions: {
+          height: 3,
+          depth: 0.1,
+        },
+        color: "#ffffff",
+        material: "Plastic",
+      };
+
+      setWalls((prev) => [...prev, newWall]);
+      setDrawingStart(null);
+      setPreviewEnd(null);
       return;
     }
 
-    // Second click → finish wall
-    const newWall: Wall = {
-      id: crypto.randomUUID(),
-      start: drawingStart,
-      end: snapped,
-      dimensions: {
-        height: 3,
-        depth: 0.1,
-      },
-      color: "#ffffff",
-      material: "Plastic",
-    };
+    /* =======================
+     DRAW WINDOW MODE
+     ======================= */
+    if (toolMode === "draw-window") {
+      setWindowPreview(null);
+      const snap = findNearestWall(world, walls);
+      if (!snap || snap.distance > 0.3) return;
 
-    setWalls((prev) => [...prev, newWall]);
-    setDrawingStart(null);
-    setPreviewEnd(null);
+      const wallLen = Math.hypot(
+        snap.wall.end.x - snap.wall.start.x,
+        snap.wall.end.y - snap.wall.start.y,
+      );
+
+      const WINDOW_WIDTH = 1.2;
+
+      const offset = snap.projection.t * wallLen - WINDOW_WIDTH / 2;
+
+      setWindows((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          wallId: snap.wall.id,
+          offset: Math.max(0, Math.min(wallLen - WINDOW_WIDTH, offset)),
+          width: WINDOW_WIDTH,
+          height: 1.2,
+          sillHeight: 0.9,
+        },
+      ]);
+
+      return;
+    }
+
+    /* =======================
+     OTHER MODES (select, etc.)
+     ======================= */
   };
 
   /* ---------------- Mouse Move (Preview) ---------------- */
 
-  const handleMouseMove = () => {
-    if (toolMode !== "draw-wall") return;
-    if (!drawingStart) return;
-
+  const handleMouseMove = useCallback(() => {
     const stage = stageRef.current;
     if (!stage) return;
 
@@ -212,9 +269,49 @@ const FloorPlanPage = () => {
     const world = getWorldPoint(pointer);
     if (!world) return;
 
-    const snapped = snapPoint(world, GRID_STEP);
-    setPreviewEnd(snapped);
-  };
+    /* =====================
+     WALL PREVIEW
+     ===================== */
+    if (toolMode === "draw-wall" && drawingStart) {
+      const snapped = snapPoint(world, GRID_STEP);
+      setPreviewEnd(snapped);
+      return;
+    }
+
+    /* =====================
+     WINDOW PREVIEW
+     ===================== */
+    if (toolMode === "draw-window") {
+      const snap = findNearestWall(world, walls);
+
+      if (!snap || snap.distance > 0.3) {
+        setWindowPreview(null);
+        return;
+      }
+
+      const wallLen = Math.hypot(
+        snap.wall.end.x - snap.wall.start.x,
+        snap.wall.end.y - snap.wall.start.y,
+      );
+
+      const PREVIEW_WIDTH = 1.2;
+
+      const offset = snap.projection.t * wallLen - PREVIEW_WIDTH / 2;
+
+      setWindowPreview({
+        wallId: snap.wall.id,
+        offset: Math.max(0, Math.min(wallLen - PREVIEW_WIDTH, offset)),
+        width: PREVIEW_WIDTH,
+      });
+
+      return;
+    }
+
+    /* =====================
+     OTHER MODES
+     ===================== */
+    setWindowPreview(null);
+  }, [toolMode, drawingStart, walls]);
 
   const buildFloorPlanJSON = () => {
     return {
@@ -281,6 +378,12 @@ const FloorPlanPage = () => {
     }
   };
 
+  const updateWindow = (id: string, data: Partial<Window>) => {
+    setWindows((prev) =>
+      prev.map((w) => (w.id === id ? { ...w, ...data } : w)),
+    );
+  };
+
   /* ---------------- Render ---------------- */
 
   return (
@@ -289,12 +392,13 @@ const FloorPlanPage = () => {
       <div className="absolute top-18 left-6 z-10 flex gap-2">
         <Button onClick={handleSave}>Save Design</Button>
 
-        <div>
+        <div className="flex gap-2">
           <Button
             disabled={viewMode === "2d" ? false : true}
             variant={`${toolMode === "draw-wall" ? "secondary" : "default"}`}
             onClick={() => {
               setToolMode("draw-wall");
+              setWindowPreview(null);
               setDrawingStart(null);
               setPreviewEnd(null);
             }}
@@ -304,9 +408,18 @@ const FloorPlanPage = () => {
 
           <Button
             disabled={viewMode === "2d" ? false : true}
+            variant={`${toolMode === "draw-window" ? "secondary" : "default"}`}
+            onClick={() => setToolMode("draw-window")}
+          >
+            Add Window
+          </Button>
+
+          <Button
+            disabled={viewMode === "2d" ? false : true}
             variant={`${toolMode === "select" ? "secondary" : "default"}`}
             onClick={() => {
               setToolMode("select");
+              setWindowPreview(null);
               setDrawingStart(null);
               setPreviewEnd(null);
             }}
@@ -324,7 +437,7 @@ const FloorPlanPage = () => {
         </Button>
       </div>
 
-      {toolMode === "select" && selectedWallId && deleteButtonPos && (
+      {toolMode === "select" && deleteButtonPos && (
         <Button
           variant="destructive"
           className="absolute z-20"
@@ -333,8 +446,18 @@ const FloorPlanPage = () => {
             top: deleteButtonPos.y + 12,
           }}
           onClick={() => {
-            setWalls((prev) => prev.filter((w) => w.id !== selectedWallId));
-            setSelectedWallId(null);
+            if (selectedWallId) {
+              setWalls((prev) => prev.filter((w) => w.id !== selectedWallId));
+              setSelectedWallId(null);
+            }
+
+            if (selectedWindowId) {
+              setWindows((prev) =>
+                prev.filter((w) => w.id !== selectedWindowId),
+              );
+              setSelectedWindowId(null);
+            }
+
             setDeleteButtonPos(null);
           }}
         >
@@ -361,9 +484,10 @@ const FloorPlanPage = () => {
               // existing draw-wall logic still runs here
               handleMouseDown(e);
 
-              // deselect wall when clicking empty space
+              // deselect wall nd window when clicking empty space
               if (toolMode === "select" && e.target === e.target.getStage()) {
                 setSelectedWallId(null);
+                setSelectedWindowId(null);
                 setDeleteButtonPos(null);
               }
             }}
@@ -424,6 +548,25 @@ const FloorPlanPage = () => {
                 />
               )}
             </Layer>
+
+            <Layer>
+              <WindowLayer
+                windows={windows}
+                walls={walls}
+                scale={PIXELS_PER_METER}
+                floorX={floorX}
+                floorY={floorY}
+                preview={windowPreview}
+                onUpdateWindow={updateWindow}
+                toolMode={toolMode}
+                selectedWindowId={selectedWindowId}
+                onSelectWindow={(id, pos) => {
+                  setSelectedWindowId(id);
+                  setSelectedWallId(null); // deselect wall
+                  setDeleteButtonPos(pos);
+                }}
+              />
+            </Layer>
           </Stage>
         ) : (
           <Scene3D
@@ -433,6 +576,7 @@ const FloorPlanPage = () => {
               material: "Maple",
             }}
             walls={walls || []}
+            windows={windows || []}
           />
         )}
       </div>

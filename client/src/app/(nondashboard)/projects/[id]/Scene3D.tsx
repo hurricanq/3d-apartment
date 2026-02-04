@@ -35,10 +35,11 @@ import {
   CameraIcon,
 } from "lucide-react";
 
-import { Floor, Wall } from "./types";
+import { Floor, Wall, Window } from "./types";
 import FurnitureList from "@/components/FurnitureList";
 import MaterialList from "@/components/MaterialList";
 import { TransformControls as TransformControlsImpl } from "three-stdlib";
+import Window3D from "./Window3D";
 
 interface ModelData {
   id: number;
@@ -52,9 +53,10 @@ interface ModelData {
 interface Scene3DProps {
   floor: Floor;
   walls: Wall[];
+  windows: Window[];
 }
 
-export default function Scene3D({ floor, walls }: Scene3DProps) {
+export default function Scene3D({ floor, walls, windows }: Scene3DProps) {
   // Selection states
   const [selectedModel, setSelectedModel] = useState<number | null>(null);
   const [selectedWall, setSelectedWall] = useState<string | null>(null);
@@ -333,6 +335,22 @@ export default function Scene3D({ floor, walls }: Scene3DProps) {
                 />
               )}
             </Model>
+          );
+        })}
+
+        {windows.map((w) => {
+          const wall = walls.find((x) => x.id === w.wallId);
+          if (!wall) return null;
+
+          return (
+            <Window3D
+              key={w.id}
+              wall={wall}
+              offset={w.offset}
+              width={w.width}
+              height={w.height}
+              sillHeight={w.sillHeight}
+            />
           );
         })}
 

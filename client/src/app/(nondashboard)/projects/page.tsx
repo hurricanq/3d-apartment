@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { SignedIn, SignedOut, RedirectToSignIn } from "@clerk/nextjs";
+import { SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -35,7 +35,17 @@ const Projects = () => {
     <>
       <SignedOut>
         <div className="min-h-screen bg-black">
-          <RedirectToSignIn />
+          <div className="max-w-6xl mx-auto py-24 px-6 lg:px-0 space-y-6">
+            <div className="flex flex-col items-center space-y-3">
+              <p className="text-gray-400">
+                You need to log in before accessing your room designs!
+              </p>
+
+              <SignInButton>
+                <Button variant="secondary">Log In</Button>
+              </SignInButton>
+            </div>
+          </div>
         </div>
       </SignedOut>
       <SignedIn>

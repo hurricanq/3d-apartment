@@ -1,4 +1,4 @@
-export type ToolMode = "select" | "draw-wall";
+export type ToolMode = "select" | "draw-wall" | "draw-window";
 
 export interface Point {
   x: number;
@@ -21,4 +21,13 @@ export type Wall = {
   };
   color?: string;
   material?: string;
+};
+
+export type Window = {
+  id: string;
+  wallId: string;
+  offset: number;
+  width: number;
+  height: number;
+  sillHeight: number;
 };

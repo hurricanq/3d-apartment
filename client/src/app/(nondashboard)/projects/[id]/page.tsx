@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Stage, Layer, Rect, Line } from "react-konva";
 import { useParams } from "next/navigation";
-import FloorPlanGrid from "./FloorPlanGrid";
+import Grid2D from "./Grid2D";
 import Konva from "konva";
 
 import { snapPoint } from "./snap";
@@ -495,10 +495,10 @@ const FloorPlanPage = () => {
           >
             {/* Grid (non-interactive) */}
             <Layer listening={false}>
-              <FloorPlanGrid
+              <Grid2D
                 width={width}
                 height={height}
-                gridSize={PIXELS_PER_METER}
+                cellSize={PIXELS_PER_METER}
               />
             </Layer>
 

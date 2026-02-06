@@ -1,4 +1,4 @@
-import React from "react";
+import React, { ReactNode } from "react";
 import { useTexture } from "@react-three/drei";
 import * as THREE from "three";
 
@@ -7,6 +7,7 @@ import { wallToMeshData } from "./wallToMeshData";
 
 interface Wall3DProps {
   wall: Wall;
+  children?: ReactNode;
   highlighted?: boolean;
   onClick?: () => void;
   onHover?: (hover: boolean) => void;
@@ -14,6 +15,7 @@ interface Wall3DProps {
 
 export default function Wall3D({
   wall,
+  children,
   highlighted = false,
   onClick,
   onHover,
@@ -25,36 +27,40 @@ export default function Wall3D({
   wallTexture.repeat.set(10, 10);
 
   return (
-    <mesh
-      position={[center.x, wall.dimensions.height / 2, center.z]}
-      rotation={[0, -angle, 0]}
-      receiveShadow
-      castShadow
-      onPointerOver={(e) => {
-        e.stopPropagation();
-        onHover?.(true);
-        document.body.style.cursor = "pointer";
-      }}
-      onPointerOut={(e) => {
-        e.stopPropagation();
-        onHover?.(false);
-        document.body.style.cursor = "default";
-      }}
-      onPointerDown={(e) => {
-        e.stopPropagation();
-        onClick?.();
-      }}
-    >
-      <boxGeometry
-        args={[length, wall.dimensions.height, wall.dimensions.depth]}
-      />
+    <group>
+      <mesh
+        position={[center.x, wall.dimensions.height / 2, center.z]}
+        rotation={[0, -angle, 0]}
+        receiveShadow
+        castShadow
+        onPointerOver={(e) => {
+          e.stopPropagation();
+          onHover?.(true);
+          document.body.style.cursor = "pointer";
+        }}
+        onPointerOut={(e) => {
+          e.stopPropagation();
+          onHover?.(false);
+          document.body.style.cursor = "default";
+        }}
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          onClick?.();
+        }}
+      >
+        <boxGeometry
+          args={[length, wall.dimensions.height, wall.dimensions.depth]}
+        />
 
-      <meshStandardMaterial
-        map={wallTexture}
-        color={highlighted ? "#60a5fa" : wall.color}
-        emissive={highlighted ? new THREE.Color("#2563eb") : undefined}
-        emissiveIntensity={highlighted ? 0.4 : 0}
-      />
-    </mesh>
+        <meshStandardMaterial
+          map={wallTexture}
+          color={highlighted ? "#60a5fa" : wall.color}
+          emissive={highlighted ? new THREE.Color("#2563eb") : undefined}
+          emissiveIntensity={highlighted ? 0.4 : 0}
+        />
+      </mesh>
+
+      {children}
+    </group>
   );
 }

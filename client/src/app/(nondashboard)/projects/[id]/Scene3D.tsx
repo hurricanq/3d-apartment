@@ -301,7 +301,20 @@ export default function Scene3D({ floor, walls, windows }: Scene3DProps) {
               onHover={(hover: boolean) =>
                 setHoveredWall(hover ? wall.id : null)
               }
-            />
+            >
+              {windows
+                .filter((w) => w.wallId === wall.id)
+                .map((w) => (
+                  <Window3D
+                    key={w.id}
+                    wall={wall}
+                    offset={w.offset}
+                    width={w.width}
+                    height={w.height}
+                    sillHeight={w.sillHeight}
+                  />
+                ))}
+            </Wall3D>
           );
         })}
 
@@ -335,22 +348,6 @@ export default function Scene3D({ floor, walls, windows }: Scene3DProps) {
                 />
               )}
             </Model>
-          );
-        })}
-
-        {windows.map((w) => {
-          const wall = walls.find((x) => x.id === w.wallId);
-          if (!wall) return null;
-
-          return (
-            <Window3D
-              key={w.id}
-              wall={wall}
-              offset={w.offset}
-              width={w.width}
-              height={w.height}
-              sillHeight={w.sillHeight}
-            />
           );
         })}
 

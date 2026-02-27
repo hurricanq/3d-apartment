@@ -8,17 +8,29 @@ import Konva from "konva";
 
 import { snapPoint } from "./snap";
 import WallLayer from "./WallLayer";
-import { ToolMode, Wall, Point, Window } from "./types";
+import {
+  ToolMode,
+  Wall,
+  Point,
+  Window,
+  Door,
+  ViewMode,
+  elementPreview,
+} from "./types";
 import Scene3D from "./Scene3D";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 // Redux
 import { useDispatch, useSelector } from "react-redux";
 import { RootState, AppDispatch } from "@/lib/store";
 import { fetchDesignById } from "@/lib/features/design/designSlice";
 import WindowLayer from "./WindowLayer";
+import DoorLayer from "./DoorLayer";
 import { findNearestWall } from "./pointToSegment";
+import DimensionLayer from "./DimensionLayer";
 
 const FloorPlanPage = () => {
   const { id } = useParams();
@@ -30,40 +42,44 @@ const FloorPlanPage = () => {
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
 
+  // States for modes
+  const [viewMode, setViewMode] = useState<ViewMode>("2d");
+  const [toolMode, setToolMode] = useState<ToolMode>("select");
+
+  // States for walls
   const [walls, setWalls] = useState<Wall[]>([]);
   const [drawingStart, setDrawingStart] = useState<Point | null>(null);
   const [previewEnd, setPreviewEnd] = useState<Point | null>(null);
-
-  const [toolMode, setToolMode] = useState<ToolMode>("select");
   const [hoveredWallId, setHoveredWallId] = useState<string | null>(null);
   const [selectedWallId, setSelectedWallId] = useState<string | null>(null);
 
-  const [windows, setWindows] = useState<Window[]>([
-    {
-      id: "win-1",
-      wallId: "rw-f",
-      offset: 1.5, // meters from wall start
-      width: 1.2,
-      height: 1.2,
-      sillHeight: 0.9, // from floor
-    },
-  ]);
-  const [windowPreview, setWindowPreview] = useState<{
-    wallId: string;
-    offset: number;
-    width: number;
-  } | null>(null);
+  // States for windows
+  const [windows, setWindows] = useState<Window[]>([]);
+  const [windowPreview, setWindowPreview] = useState<elementPreview | null>(
+    null,
+  );
   const [selectedWindowId, setSelectedWindowId] = useState<string | null>(null);
+  const [windowParameters, setWindowParameters] = useState({
+    width: 2.4,
+    height: 1.2,
+    sillHeight: 0.9, // from floor
+  });
+
+  // States for doors
+  const [doors, setDoors] = useState<Door[]>([]);
+  const [doorPreview, setDoorPreview] = useState<elementPreview | null>(null);
+  const [selectedDoorId, setSelectedDoorId] = useState<string | null>(null);
+  const [doorParameters, setDoorParameters] = useState({
+    width: 0.8,
+    height: 2.4,
+    swingDirection: "right" as "in" | "out" | "left" | "right",
+  });
 
   // Floor dimensions (width, height)
   const [floorDimensions, setFloorDimensions] = useState({
     width: 0,
     height: 0,
   });
-
-  type ViewMode = "2d" | "3d";
-
-  const [viewMode, setViewMode] = useState<ViewMode>("2d");
 
   const [deleteButtonPos, setDeleteButtonPos] = useState<{
     x: number;
@@ -115,6 +131,25 @@ const FloorPlanPage = () => {
         setDrawingStart(null);
         setPreviewEnd(null);
       }
+
+      // Delete selected item with Delete key
+      if (e.key === "Delete" || e.key === "Backspace") {
+        if (selectedWallId) {
+          setWalls((prev) => prev.filter((w) => w.id !== selectedWallId));
+          setSelectedWallId(null);
+          setDeleteButtonPos(null);
+        }
+        if (selectedWindowId) {
+          setWindows((prev) => prev.filter((w) => w.id !== selectedWindowId));
+          setSelectedWindowId(null);
+          setDeleteButtonPos(null);
+        }
+        if (selectedDoorId) {
+          setDoors((prev) => prev.filter((d) => d.id !== selectedDoorId));
+          setSelectedDoorId(null);
+          setDeleteButtonPos(null);
+        }
+      }
     };
 
     window.addEventListener("keydown", handleKeyDown);
@@ -122,7 +157,7 @@ const FloorPlanPage = () => {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, []);
+  }, [selectedWallId, selectedWindowId, selectedDoorId]);
 
   /* ---------------- Zoom ---------------- */
 
@@ -188,9 +223,7 @@ const FloorPlanPage = () => {
     const world = getWorldPoint(pointer);
     if (!world) return;
 
-    /* =======================
-     DRAW WALL MODE
-     ======================= */
+    /* Draw Wall Mode */
     if (toolMode === "draw-wall") {
       const snapped = snapPoint(world, GRID_STEP);
 
@@ -220,9 +253,7 @@ const FloorPlanPage = () => {
       return;
     }
 
-    /* =======================
-     DRAW WINDOW MODE
-     ======================= */
+    // Draw window
     if (toolMode === "draw-window") {
       setWindowPreview(null);
       const snap = findNearestWall(world, walls);
@@ -233,7 +264,7 @@ const FloorPlanPage = () => {
         snap.wall.end.y - snap.wall.start.y,
       );
 
-      const WINDOW_WIDTH = 1.2;
+      const WINDOW_WIDTH = windowParameters.width;
 
       const offset = snap.projection.t * wallLen - WINDOW_WIDTH / 2;
 
@@ -244,21 +275,46 @@ const FloorPlanPage = () => {
           wallId: snap.wall.id,
           offset: Math.max(0, Math.min(wallLen - WINDOW_WIDTH, offset)),
           width: WINDOW_WIDTH,
-          height: 1.2,
-          sillHeight: 0.9,
+          height: windowParameters.height,
+          sillHeight: windowParameters.sillHeight,
         },
       ]);
 
       return;
     }
 
-    /* =======================
-     OTHER MODES (select, etc.)
-     ======================= */
+    // Draw door
+    if (toolMode === "draw-door") {
+      setDoorPreview(null);
+      const snap = findNearestWall(world, walls);
+      if (!snap || snap.distance > 0.3) return;
+
+      const wallLen = Math.hypot(
+        snap.wall.end.x - snap.wall.start.x,
+        snap.wall.end.y - snap.wall.start.y,
+      );
+
+      const DOOR_WIDTH = doorParameters.width;
+
+      const offset = snap.projection.t * wallLen - DOOR_WIDTH / 2;
+
+      setDoors((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          wallId: snap.wall.id,
+          offset: Math.max(0, Math.min(wallLen - DOOR_WIDTH, offset)),
+          width: DOOR_WIDTH,
+          height: doorParameters.height,
+          swingDirection: doorParameters.swingDirection,
+        },
+      ]);
+
+      return;
+    }
   };
 
-  /* ---------------- Mouse Move (Preview) ---------------- */
-
+  // Mouse move (preview)
   const handleMouseMove = useCallback(() => {
     const stage = stageRef.current;
     if (!stage) return;
@@ -269,18 +325,14 @@ const FloorPlanPage = () => {
     const world = getWorldPoint(pointer);
     if (!world) return;
 
-    /* =====================
-     WALL PREVIEW
-     ===================== */
+    /* Wall Preview */
     if (toolMode === "draw-wall" && drawingStart) {
       const snapped = snapPoint(world, GRID_STEP);
       setPreviewEnd(snapped);
       return;
     }
 
-    /* =====================
-     WINDOW PREVIEW
-     ===================== */
+    /* Window Preview */
     if (toolMode === "draw-window") {
       const snap = findNearestWall(world, walls);
 
@@ -294,7 +346,7 @@ const FloorPlanPage = () => {
         snap.wall.end.y - snap.wall.start.y,
       );
 
-      const PREVIEW_WIDTH = 1.2;
+      const PREVIEW_WIDTH = windowParameters.width;
 
       const offset = snap.projection.t * wallLen - PREVIEW_WIDTH / 2;
 
@@ -307,11 +359,33 @@ const FloorPlanPage = () => {
       return;
     }
 
-    /* =====================
-     OTHER MODES
-     ===================== */
+    if (toolMode === "draw-door") {
+      const snap = findNearestWall(world, walls);
+
+      if (!snap || snap.distance > 0.3) {
+        setDoorPreview(null);
+        return;
+      }
+
+      const wallLen = Math.hypot(
+        snap.wall.end.x - snap.wall.start.x,
+        snap.wall.end.y - snap.wall.start.y,
+      );
+
+      const PREVIEW_WIDTH = doorParameters.width;
+
+      const offset = snap.projection.t * wallLen - PREVIEW_WIDTH / 2;
+
+      setDoorPreview({
+        wallId: snap.wall.id,
+        offset: Math.max(0, Math.min(wallLen - PREVIEW_WIDTH, offset)),
+        width: PREVIEW_WIDTH,
+      });
+
+      return;
+    }
     setWindowPreview(null);
-  }, [toolMode, drawingStart, walls]);
+  }, [toolMode, drawingStart, walls, windowParameters, doorParameters]);
 
   const buildFloorPlanJSON = () => {
     return {
@@ -342,6 +416,24 @@ const FloorPlanPage = () => {
             end: wall.end,
             color: wall.color || "#FFFFFF",
             material: wall.material || "Plastic",
+          })),
+
+          windows: windows.map((window) => ({
+            id: window.id,
+            wallId: window.wallId,
+            offset: window.offset,
+            width: window.width,
+            height: window.height,
+            sillHeight: window.sillHeight,
+          })),
+
+          doors: doors.map((door) => ({
+            id: door.id,
+            wallId: door.wallId,
+            offset: door.offset,
+            width: door.width,
+            height: door.height,
+            swingDirection: door.swingDirection,
           })),
         },
       ],
@@ -384,6 +476,10 @@ const FloorPlanPage = () => {
     );
   };
 
+  const updateDoor = (id: string, data: Partial<Door>) => {
+    setDoors((prev) => prev.map((d) => (d.id === id ? { ...d, ...data } : d)));
+  };
+
   /* ---------------- Render ---------------- */
 
   return (
@@ -412,6 +508,14 @@ const FloorPlanPage = () => {
             onClick={() => setToolMode("draw-window")}
           >
             Add Window
+          </Button>
+
+          <Button
+            disabled={viewMode === "2d" ? false : true}
+            variant={`${toolMode === "draw-door" ? "secondary" : "default"}`}
+            onClick={() => setToolMode("draw-door")}
+          >
+            Add Door
           </Button>
 
           <Button
@@ -458,11 +562,89 @@ const FloorPlanPage = () => {
               setSelectedWindowId(null);
             }
 
+            if (selectedDoorId) {
+              setDoors((prev) => prev.filter((d) => d.id !== selectedDoorId));
+              setSelectedDoorId(null);
+            }
+
             setDeleteButtonPos(null);
           }}
         >
           Delete
         </Button>
+      )}
+
+      {viewMode === "2d" && (
+        <div className="absolute bottom-10 right-5 z-10 bg-white p-3 rounded shadow flex flex-col gap-5">
+          <div className="flex gap-3">
+            <div className="space-y-3">
+              <Label>Door Width</Label>
+              <Input
+                type="number"
+                value={doorParameters.width}
+                onChange={(e) => {
+                  const v = parseFloat(e.target.value) || 0;
+                  setDoorParameters({ ...doorParameters, width: v });
+                }}
+                className="w-16"
+              />
+            </div>
+
+            <div className="space-y-3">
+              <Label>Door Height</Label>
+              <Input
+                type="number"
+                value={doorParameters.height}
+                onChange={(e) => {
+                  const v = parseFloat(e.target.value) || 0;
+                  setDoorParameters({ ...doorParameters, height: v });
+                }}
+                className="w-16"
+              />
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <div className="space-y-3">
+              <Label>Window Width</Label>
+              <Input
+                type="number"
+                value={windowParameters.width}
+                onChange={(e) => {
+                  const v = parseFloat(e.target.value) || 0;
+                  setWindowParameters({ ...windowParameters, width: v });
+                }}
+                className="w-16"
+              />
+            </div>
+
+            <div className="space-y-3">
+              <Label>Window Height</Label>
+              <Input
+                type="number"
+                value={windowParameters.height}
+                onChange={(e) => {
+                  const v = parseFloat(e.target.value) || 0;
+                  setWindowParameters({ ...windowParameters, height: v });
+                }}
+                className="w-16"
+              />
+            </div>
+
+            <div className="space-y-3">
+              <Label>Window Sill Height</Label>
+              <Input
+                type="number"
+                value={windowParameters.sillHeight}
+                onChange={(e) => {
+                  const v = parseFloat(e.target.value) || 0;
+                  setWindowParameters({ ...windowParameters, sillHeight: v });
+                }}
+                className="w-16"
+              />
+            </div>
+          </div>
+        </div>
       )}
 
       <div className="w-full h-screen border relative">
@@ -513,6 +695,15 @@ const FloorPlanPage = () => {
                 strokeWidth={2}
               />
             </Layer>
+
+            {/* Add Dimension Layer here - pass meters, not pixels */}
+            <DimensionLayer
+              floorX={floorX}
+              floorY={floorY}
+              floorWidth={floorDimensions.width}
+              floorHeight={floorDimensions.height}
+              pixelsPerMeter={PIXELS_PER_METER}
+            />
 
             {/* Render rooms */}
             <Layer>
@@ -567,6 +758,25 @@ const FloorPlanPage = () => {
                 }}
               />
             </Layer>
+
+            <Layer>
+              <DoorLayer
+                doors={doors}
+                walls={walls}
+                scale={PIXELS_PER_METER}
+                floorX={floorX}
+                floorY={floorY}
+                preview={doorPreview}
+                onUpdateDoor={updateDoor}
+                toolMode={toolMode}
+                selectedDoorId={selectedDoorId}
+                onSelectDoor={(id, pos) => {
+                  setSelectedDoorId(id);
+                  setSelectedWallId(null); // deselect wall
+                  setDeleteButtonPos(pos);
+                }}
+              />
+            </Layer>
           </Stage>
         ) : (
           <Scene3D
@@ -577,6 +787,7 @@ const FloorPlanPage = () => {
             }}
             walls={walls || []}
             windows={windows || []}
+            doors={doors}
           />
         )}
       </div>

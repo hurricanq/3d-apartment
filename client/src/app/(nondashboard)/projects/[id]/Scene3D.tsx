@@ -35,11 +35,10 @@ import {
   CameraIcon,
 } from "lucide-react";
 
-import { Floor, Wall, Window } from "./types";
+import { Floor, Wall, Window, Door } from "./types";
 import FurnitureList from "@/components/FurnitureList";
 import MaterialList from "@/components/MaterialList";
 import { TransformControls as TransformControlsImpl } from "three-stdlib";
-import Window3D from "./Window3D";
 
 interface ModelData {
   id: number;
@@ -54,9 +53,15 @@ interface Scene3DProps {
   floor: Floor;
   walls: Wall[];
   windows: Window[];
+  doors?: Door[];
 }
 
-export default function Scene3D({ floor, walls, windows }: Scene3DProps) {
+export default function Scene3D({
+  floor,
+  walls,
+  windows,
+  doors = [],
+}: Scene3DProps) {
   // Selection states
   const [selectedModel, setSelectedModel] = useState<number | null>(null);
   const [selectedWall, setSelectedWall] = useState<string | null>(null);
@@ -76,6 +81,7 @@ export default function Scene3D({ floor, walls, windows }: Scene3DProps) {
   const [pointPosition, setPointPosition] = useState<[number, number, number]>([
     4, 2, 3,
   ]);
+  const [objectIntensity, setObjectIntensity] = useState(1);
 
   // Refs
   const transformRef = useRef<TransformControlsImpl>(null);
@@ -289,10 +295,15 @@ export default function Scene3D({ floor, walls, windows }: Scene3DProps) {
           const isHovered = hoveredWall === wall.id;
           const isSelected = selectedWall === wall.id;
 
+          const wallWindows = windows.filter((w) => w.wallId === wall.id);
+          const wallDoors = doors.filter((d) => d.wallId === wall.id);
+
           return (
             <Wall3D
               key={wall.id}
               wall={wall}
+              windows={wallWindows}
+              doors={wallDoors}
               highlighted={isHovered || isSelected}
               onClick={() => {
                 setSelectedWall(wall.id);
@@ -301,20 +312,7 @@ export default function Scene3D({ floor, walls, windows }: Scene3DProps) {
               onHover={(hover: boolean) =>
                 setHoveredWall(hover ? wall.id : null)
               }
-            >
-              {windows
-                .filter((w) => w.wallId === wall.id)
-                .map((w) => (
-                  <Window3D
-                    key={w.id}
-                    wall={wall}
-                    offset={w.offset}
-                    width={w.width}
-                    height={w.height}
-                    sillHeight={w.sillHeight}
-                  />
-                ))}
-            </Wall3D>
+            />
           );
         })}
 
@@ -338,15 +336,16 @@ export default function Scene3D({ floor, walls, windows }: Scene3DProps) {
               }}
             >
               {/* If this model should emit light */}
-              {model.url.includes("lamp") && (
-                <pointLight
-                  intensity={10}
-                  distance={5}
-                  color="#ffffff"
-                  position={[0, 1, 0]}
-                  castShadow
-                />
-              )}
+              {model.url.includes("lamp") ||
+                (model.url.includes("light") && (
+                  <pointLight
+                    intensity={objectIntensity}
+                    distance={5}
+                    color="#ffffff"
+                    position={[0, 1, 0]}
+                    castShadow
+                  />
+                ))}
             </Model>
           );
         })}
@@ -441,6 +440,17 @@ export default function Scene3D({ floor, walls, windows }: Scene3DProps) {
               />
             </div>
           )}
+
+          <div className="space-y-3">
+            <Label>Object Light Intensity</Label>
+            <Slider
+              value={[objectIntensity]}
+              onValueChange={(v) => setObjectIntensity(v[0])}
+              min={0}
+              max={20}
+              step={0.1}
+            />
+          </div>
 
           {dayNight === "night" && (
             <div className="space-y-3">

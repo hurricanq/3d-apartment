@@ -1,4 +1,5 @@
-export type ToolMode = "select" | "draw-wall" | "draw-window";
+export type ViewMode = "2d" | "3d";
+export type ToolMode = "select" | "draw-wall" | "draw-window" | "draw-door";
 
 export interface Point {
   x: number;
@@ -30,4 +31,19 @@ export type Window = {
   width: number;
   height: number;
   sillHeight: number;
+};
+
+export type Door = {
+  id: string;
+  wallId: string;
+  offset: number; // meters from wall start
+  width: number;
+  height: number;
+  swingDirection?: "in" | "out" | "left" | "right";
+};
+
+export type elementPreview = {
+  wallId: string;
+  offset: number;
+  width: number;
 };

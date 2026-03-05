@@ -33,12 +33,14 @@ import {
   CopyIcon,
   TrashIcon,
   CameraIcon,
+  DownloadIcon,
 } from "lucide-react";
 
 import { Floor, Wall, Window, Door } from "./types";
 import FurnitureList from "@/components/FurnitureList";
 import MaterialList from "@/components/MaterialList";
 import { TransformControls as TransformControlsImpl } from "three-stdlib";
+import Ceiling3D from "./Ceiling3D";
 
 interface ModelData {
   id: number;
@@ -65,6 +67,8 @@ export default function Scene3D({
   // Selection states
   const [selectedModel, setSelectedModel] = useState<number | null>(null);
   const [selectedWall, setSelectedWall] = useState<string | null>(null);
+  const [selectedDoor, setSelectedDoor] = useState<string | null>(null);
+  const [selectedWindow, setSelectedWindow] = useState<string | null>(null);
   const [hoveredWall, setHoveredWall] = useState<string | null>(null);
 
   // UI modes
@@ -94,6 +98,8 @@ export default function Scene3D({
   const [renderMode, setRenderMode] = useState(false);
 
   const [wallsState, setWallsState] = useState(walls);
+  const [doorsState, setDoorsState] = useState(doors);
+  const [windowsState, setWindowsState] = useState(windows);
 
   // Add a new model
   const addModel = (modelUrl: string): void => {
@@ -151,6 +157,24 @@ export default function Scene3D({
     setWallsState((prevWalls) =>
       prevWalls.map((wall) =>
         wall.id === selectedWall ? { ...wall, color } : wall,
+      ),
+    );
+  };
+
+  const updateDoorColor = (color: string): void => {
+    if (!selectedDoor) return;
+    setDoorsState((prevDoors) =>
+      prevDoors.map((door) =>
+        door.id === selectedDoor ? { ...door, color } : door,
+      ),
+    );
+  };
+
+  const updateWindowColor = (color: string): void => {
+    if (!selectedWindow) return;
+    setWindowsState((prevWindows) =>
+      prevWindows.map((window) =>
+        window.id === selectedWindow ? { ...window, color } : window,
       ),
     );
   };
@@ -226,7 +250,12 @@ export default function Scene3D({
         onPointerMissed={() => {
           setSelectedModel(null);
           setSelectedWall(null);
+          setSelectedDoor(null);
+          setSelectedWindow(null);
         }}
+        onCreated={(state) => {
+          glRef.current = state.gl;
+        }} // For exporting image
       >
         {/* Background */}
         <color
@@ -290,13 +319,15 @@ export default function Scene3D({
           material={floor.material}
         />
 
+        <Ceiling3D width={floor.width} height={floor.height} zPos={3} />
+
         {/* Walls */}
         {wallsState.map((wall) => {
           const isHovered = hoveredWall === wall.id;
           const isSelected = selectedWall === wall.id;
 
-          const wallWindows = windows.filter((w) => w.wallId === wall.id);
-          const wallDoors = doors.filter((d) => d.wallId === wall.id);
+          const wallWindows = windowsState.filter((w) => w.wallId === wall.id);
+          const wallDoors = doorsState.filter((d) => d.wallId === wall.id);
 
           return (
             <Wall3D
@@ -308,10 +339,32 @@ export default function Scene3D({
               onClick={() => {
                 setSelectedWall(wall.id);
                 setSelectedModel(null);
+                setSelectedDoor(null);
+                setSelectedWindow(null);
               }}
               onHover={(hover: boolean) =>
                 setHoveredWall(hover ? wall.id : null)
               }
+              onDoorClick={(doorId) => {
+                setSelectedDoor(doorId);
+                setSelectedModel(null);
+                setSelectedWall(null);
+                setSelectedWindow(null);
+                // Toggle door open/close
+                setDoorsState((prevDoors) =>
+                  prevDoors.map((door) =>
+                    door.id === doorId
+                      ? { ...door, isOpen: !door.isOpen }
+                      : door,
+                  ),
+                );
+              }}
+              onWindowClick={(windowId) => {
+                setSelectedWindow(windowId);
+                setSelectedModel(null);
+                setSelectedWall(null);
+                setSelectedDoor(null);
+              }}
             />
           );
         })}
@@ -333,6 +386,8 @@ export default function Scene3D({
               onClick={() => {
                 setSelectedModel(model.id);
                 setSelectedWall(null);
+                setSelectedDoor(null);
+                setSelectedWindow(null);
               }}
             >
               {/* If this model should emit light */}
@@ -419,7 +474,10 @@ export default function Scene3D({
 
         {renderMode && (
           <>
-            <Button onClick={exportImage}>Export Image</Button>
+            <Button onClick={exportImage}>
+              {" "}
+              <DownloadIcon />
+            </Button>
           </>
         )}
       </div>
@@ -501,6 +559,37 @@ export default function Scene3D({
             onChange={updateWallColor}
           />
           <Button className="mt-2" onClick={() => setSelectedWall(null)}>
+            Close
+          </Button>
+        </div>
+      )}
+
+      {selectedDoor && (
+        <div className="absolute right-5 top-1/2 -translate-y-1/2 z-20 bg-white p-4 rounded shadow">
+          <Label className="mb-2 block">Door Color</Label>
+          <HexColorPicker
+            color={
+              doorsState.find((d) => d.id === selectedDoor)?.color || "#8b5a2b"
+            }
+            onChange={updateDoorColor}
+          />
+          <Button className="mt-2" onClick={() => setSelectedDoor(null)}>
+            Close
+          </Button>
+        </div>
+      )}
+
+      {selectedWindow && (
+        <div className="absolute right-5 top-1/2 -translate-y-1/2 z-20 bg-white p-4 rounded shadow">
+          <Label className="mb-2 block">Window Color</Label>
+          <HexColorPicker
+            color={
+              windowsState.find((w) => w.id === selectedWindow)?.color ||
+              "#88ccff"
+            }
+            onChange={updateWindowColor}
+          />
+          <Button className="mt-2" onClick={() => setSelectedWindow(null)}>
             Close
           </Button>
         </div>

@@ -7,7 +7,7 @@ describe("Wall3D helper geometry", () => {
     start: { x: 0, y: 0 },
     end: { x: 1, y: 0 },
     dimensions: { height: 3, depth: 0.1 },
-  } as any; // only dimensions are used here
+  }; // only dimensions are used here
   const wallLength = 1;
 
   test("door geometry is positioned on floor and has correct height", () => {
@@ -17,7 +17,7 @@ describe("Wall3D helper geometry", () => {
       offset: 0,
       width: 1,
       height: 2.2,
-    } as any;
+    };
     const geo = createDoorGeometry(door, wall, wallLength);
     geo.computeBoundingBox();
     const bb = geo.boundingBox!;
@@ -35,7 +35,7 @@ describe("Wall3D helper geometry", () => {
       width: 1,
       height: 1,
       sillHeight: 0.5,
-    } as any;
+    };
     const geo = createWindowGeometry(window, wall, wallLength);
     geo.computeBoundingBox();
     const bb = geo.boundingBox!;

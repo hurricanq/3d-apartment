@@ -12,6 +12,12 @@ export type Floor = {
   material: string;
 };
 
+export type Ceiling = {
+  width: number;
+  height: number;
+  zPos: number;
+};
+
 export type Wall = {
   id: string;
   start: { x: number; y: number };
@@ -31,6 +37,7 @@ export type Window = {
   width: number;
   height: number;
   sillHeight: number;
+  color?: string;
 };
 
 export type Door = {
@@ -40,6 +47,8 @@ export type Door = {
   width: number;
   height: number;
   swingDirection?: "in" | "out" | "left" | "right";
+  color?: string;
+  isOpen?: boolean;
 };
 
 export type elementPreview = {

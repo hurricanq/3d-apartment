@@ -15,9 +15,6 @@ const Action = () => {
             <Link href="/projects">
               <Button variant="secondary">Get Started</Button>
             </Link>
-            <Link href="/about">
-              <Button>Learn More</Button>
-            </Link>
           </div>
         </div>
       </div>

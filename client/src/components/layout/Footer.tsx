@@ -24,12 +24,6 @@ const Footer = () => {
 
         <div className="flex items-center gap-5 whitespace-nowrap">
           <Link
-            href="/about"
-            className="opacity-80 transition-opacity duration-300 hover:opacity-100"
-          >
-            About
-          </Link>
-          <Link
             href="#"
             className="opacity-80 transition-opacity duration-300 hover:opacity-100"
           >

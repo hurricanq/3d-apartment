@@ -44,9 +44,6 @@ const Header = () => {
           <Button variant="ghost">
             <Link href="/projects">Projects</Link>
           </Button>
-          <Button variant="ghost">
-            <Link href="/about">About Us</Link>
-          </Button>
           {user?.publicMetadata.role == "admin" && (
             <Button variant="ghost">
               <Link href="/dashboard">Dashboard</Link>
@@ -92,15 +89,6 @@ const Header = () => {
                     className="text-xl"
                   >
                     Projects
-                  </Link>
-                </Button>
-                <Button variant="ghost" className="h-16">
-                  <Link
-                    href="/about"
-                    onClick={() => setIsMenuOpen(false)} // Close menu on click
-                    className="text-xl"
-                  >
-                    About Us
                   </Link>
                 </Button>
                 {user?.publicMetadata.role == "admin" && (

@@ -1,7 +1,4 @@
-"use client";
-
 import React from "react";
-import { motion } from "framer-motion";
 
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -32,20 +29,14 @@ const Gallery = () => {
   return (
     <section className="py-16 px-6 lg:px-0 bg-black text-white">
       <div className="max-w-6xl mx-auto flex gap-6">
-        <motion.div
-          className="flex flex-col space-y-6"
-          initial={{ opacity: 0, x: -50 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 2.0, ease: "easeOut" }}
-        >
+        <div className="flex flex-col space-y-6">
           <h2 className="font-semibold text-5xl">Why Aperoom?</h2>
           <p className="w-1/2">
             Our platform uses WebGPU-accelerated rendering to give you a
             real-time look at your home with lighting and textures so accurate,
             you will try to sit on the virtual couch.
           </p>
-        </motion.div>
+        </div>
 
         <Carousel className="w-full max-w-[12rem] sm:max-w-xs text-black">
           <CarouselContent>

@@ -1,8 +1,5 @@
-"use client";
-
 import React from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
 
 import { Button } from "@/components/ui/button";
 
@@ -19,13 +16,7 @@ const Hero = () => {
       ></div>
 
       {/* Content Overlay */}
-      <motion.div
-        className="relative z-10 text-center px-6 max-w-4xl"
-        initial={{ opacity: 0, y: 50 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: "-100px" }}
-        transition={{ duration: 2.0, ease: "easeOut" }}
-      >
+      <div className="relative z-10 text-center px-6 max-w-4xl">
         <h1 className="text-4xl md:text-6xl font-semibold text-white mb-4">
           Visualize your 3D rooms
         </h1>
@@ -40,7 +31,7 @@ const Hero = () => {
             <Button>Learn More</Button>
           </Link>
         </div>
-      </motion.div>
+      </div>
     </section>
   );
 };

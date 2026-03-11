@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Stage, Layer, Rect, Line } from "react-konva";
+import { Stage, Layer, Rect, Line, Text } from "react-konva";
 import { useParams } from "next/navigation";
 import Grid2D from "./Grid2D";
 import Konva from "konva";
@@ -16,6 +16,7 @@ import {
   Door,
   ViewMode,
   elementPreview,
+  Room,
 } from "./types";
 import Scene3D from "./Scene3D";
 
@@ -31,6 +32,7 @@ import WindowLayer from "./WindowLayer";
 import DoorLayer from "./DoorLayer";
 import { findNearestWall } from "./pointToSegment";
 import DimensionLayer from "./DimensionLayer";
+import { detectRooms } from "./roomDetection";
 
 const FloorPlanPage = () => {
   const { id } = useParams();
@@ -86,6 +88,8 @@ const FloorPlanPage = () => {
     y: number;
   } | null>(null);
 
+  const [rooms, setRooms] = useState<Room[]>([]);
+
   // Fetch design by ID (on mount) from the backend
   useEffect(() => {
     dispatch(fetchDesignById(Number(id)));
@@ -112,6 +116,11 @@ const FloorPlanPage = () => {
       setWalls(room.walls);
     }
   }, [selectedDesign]);
+
+  useEffect(() => {
+    const detected = detectRooms(walls);
+    setRooms(detected);
+  }, [walls]);
 
   const GRID_STEP = 0.25; // meters (25cm)
   const width = 1600;
@@ -705,6 +714,40 @@ const FloorPlanPage = () => {
               pixelsPerMeter={PIXELS_PER_METER}
             />
 
+            <Layer listening={false}>
+              {rooms.map((room, i) => {
+                if (!room?.polygon) return null;
+
+                const points = room.polygon.flatMap((p) => [
+                  floorX + p.x * PIXELS_PER_METER,
+                  floorY + p.y * PIXELS_PER_METER,
+                ]);
+
+                return (
+                  <React.Fragment key={room.id}>
+                    <Line
+                      points={points}
+                      closed
+                      fill="rgba(34,197,94,0.15)"
+                      stroke="rgba(34,197,94,0.6)"
+                      strokeWidth={2}
+                    />
+
+                    <Text
+                      x={floorX + room.centroid.x * PIXELS_PER_METER}
+                      y={floorY + room.centroid.y * PIXELS_PER_METER}
+                      text={`${room.area.toFixed(2)} m²`}
+                      fontSize={14}
+                      fill="#065f46"
+                      align="center"
+                      offsetX={30}
+                      offsetY={10}
+                    />
+                  </React.Fragment>
+                );
+              })}
+            </Layer>
+
             {/* Render rooms */}
             <Layer>
               <WallLayer
@@ -780,11 +823,7 @@ const FloorPlanPage = () => {
           </Stage>
         ) : (
           <Scene3D
-            floor={{
-              width: floorDimensions.width,
-              height: floorDimensions.height,
-              material: "Maple",
-            }}
+            rooms={rooms}
             walls={walls || []}
             windows={windows || []}
             doors={doors}

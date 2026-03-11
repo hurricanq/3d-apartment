@@ -56,3 +56,21 @@ export type elementPreview = {
   offset: number;
   width: number;
 };
+
+export type Room = {
+  id: string;
+  polygon: Point[];
+  area: number;
+  centroid: Point;
+};
+
+export type Node = {
+  id: string;
+  point: Point;
+};
+
+export type Edge = {
+  start: string;
+  end: string;
+  angle: number;
+};

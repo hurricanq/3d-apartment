@@ -11,7 +11,6 @@ import {
   PerspectiveCamera,
 } from "@react-three/drei";
 
-import Floor3D from "./Floor3D";
 import Wall3D from "./Wall3D";
 import Model from "@/components/Model";
 import FPSCamera from "@/components/FPSCamera";
@@ -36,11 +35,11 @@ import {
   DownloadIcon,
 } from "lucide-react";
 
-import { Floor, Wall, Window, Door } from "./types";
+import { Wall, Window, Door, Room } from "./types";
 import FurnitureList from "@/components/FurnitureList";
 import MaterialList from "@/components/MaterialList";
 import { TransformControls as TransformControlsImpl } from "three-stdlib";
-import Ceiling3D from "./Ceiling3D";
+import RoomFloor3D from "./RoomFloor3D";
 
 interface ModelData {
   id: number;
@@ -52,14 +51,14 @@ interface ModelData {
 }
 
 interface Scene3DProps {
-  floor: Floor;
+  rooms: Room[];
   walls: Wall[];
   windows: Window[];
   doors?: Door[];
 }
 
 export default function Scene3D({
-  floor,
+  rooms,
   walls,
   windows,
   doors = [],
@@ -313,13 +312,9 @@ export default function Scene3D({
         <Grid args={[50, 50]} />
 
         {/* Floor */}
-        <Floor3D
-          width={floor.width}
-          height={floor.height}
-          material={floor.material}
-        />
-
-        <Ceiling3D width={floor.width} height={floor.height} zPos={3} />
+        {rooms.map((room) => (
+          <RoomFloor3D key={room.id} polygon={room.polygon} material="Maple" />
+        ))}
 
         {/* Walls */}
         {wallsState.map((wall) => {

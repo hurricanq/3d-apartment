@@ -269,10 +269,6 @@ export default function Scene3D({
       // Render the scene with proper arguments
       gl.render(scene, camera);
 
-      // Get canvas dimensions
-      const width = canvas.width;
-      const height = canvas.height;
-
       // Convert canvas to data URL
       const dataURL = canvas.toDataURL("image/png");
 

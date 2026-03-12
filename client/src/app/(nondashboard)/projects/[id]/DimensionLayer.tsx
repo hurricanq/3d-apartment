@@ -1,5 +1,5 @@
 import React from "react";
-import { Layer, Line, Text, Group, Arrow } from "react-konva";
+import { Layer, Line, Text, Group } from "react-konva";
 
 interface DimensionLayerProps {
   floorX: number;
@@ -17,7 +17,6 @@ const DimensionLayer: React.FC<DimensionLayerProps> = ({
   pixelsPerMeter,
 }) => {
   const dimensionOffset = 40; // Distance from floor edge in pixels
-  const arrowSize = 10;
   const fontSize = 14;
 
   // Convert meter dimensions to pixels
@@ -70,8 +69,9 @@ const DimensionLayer: React.FC<DimensionLayerProps> = ({
     const midX = (start.x + end.x) / 2;
     const midY = (start.y + end.y) / 2;
 
-    // Offset for tick marks (perpendicular to dimension line)
-    const tickOffset = isHorizontal ? 8 : 8;
+    // Calculate dimension angle in degrees
+    const dimensionAngle = Math.atan2(end.y - start.y, end.x - start.x);
+    const rotation = (dimensionAngle * 180) / Math.PI;
 
     return (
       <Group>
@@ -88,49 +88,24 @@ const DimensionLayer: React.FC<DimensionLayerProps> = ({
         {/* Right/Bottom tick mark */}
         <DimensionTick x={end.x} y={end.y} isHorizontal={isHorizontal} />
 
-        {/* Arrow at start */}
-        <Arrow
-          points={[
-            start.x + (isHorizontal ? arrowSize : 0),
-            start.y + (isHorizontal ? arrowSize / 2 : 0),
-            start.x,
-            start.y,
-          ]}
-          stroke="#2563eb"
-          strokeWidth={1.5}
-          fill="#2563eb"
-          pointerLength={arrowSize}
-          pointerWidth={arrowSize}
-        />
-
-        {/* Arrow at end */}
-        <Arrow
-          points={[
-            end.x - (isHorizontal ? arrowSize : 0),
-            end.y - (isHorizontal ? arrowSize / 2 : 0),
-            end.x,
-            end.y,
-          ]}
-          stroke="#2563eb"
-          strokeWidth={1.5}
-          fill="#2563eb"
-          pointerLength={arrowSize}
-          pointerWidth={arrowSize}
-        />
-
-        {/* Measurement text with background for readability */}
+        {/* Measurement text with rotation */}
         <Group>
           {/* Text background */}
           <Text
-            x={midX - 30}
-            y={midY + 10}
+            x={rotation === 90 ? midX + 20 : midX}
+            y={rotation === 90 ? midY : midY + 20}
             text={text}
             fontSize={fontSize}
             fontFamily="Inter"
             fontStyle="bold"
             fill="#2563eb"
             align="center"
-            width={60}
+            offsetX={30}
+            offsetY={10}
+            rotation={rotation}
+            shadowColor="white"
+            shadowBlur={4}
+            shadowOpacity={0.8}
           />
         </Group>
       </Group>

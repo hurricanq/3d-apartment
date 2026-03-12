@@ -17,6 +17,7 @@ import {
   ViewMode,
   elementPreview,
   Room,
+  ModelData,
 } from "./types";
 import Scene3D from "./Scene3D";
 
@@ -27,12 +28,16 @@ import { Label } from "@/components/ui/label";
 // Redux
 import { useDispatch, useSelector } from "react-redux";
 import { RootState, AppDispatch } from "@/lib/store";
-import { fetchDesignById } from "@/lib/features/design/designSlice";
+import {
+  fetchDesignById,
+  updateDesign,
+} from "@/lib/features/design/designSlice";
 import WindowLayer from "./WindowLayer";
 import DoorLayer from "./DoorLayer";
 import { findNearestWall } from "./pointToSegment";
 import DimensionLayer from "./DimensionLayer";
 import { detectRooms } from "./roomDetection";
+import { DesignData } from "@/lib/types/design";
 
 const FloorPlanPage = () => {
   const { id } = useParams();
@@ -77,6 +82,9 @@ const FloorPlanPage = () => {
     swingDirection: "right" as "in" | "out" | "left" | "right",
   });
 
+  // States for models
+  const [models, setModels] = useState<ModelData[]>([]);
+
   // Floor dimensions (width, height)
   const [floorDimensions, setFloorDimensions] = useState({
     width: 0,
@@ -114,6 +122,21 @@ const FloorPlanPage = () => {
     // Load walls
     if (room.walls && room.walls.length > 0) {
       setWalls(room.walls);
+    }
+
+    // Load doors
+    if (room.doors && room.doors.length > 0) {
+      setDoors(room.doors);
+    }
+
+    // Load windows
+    if (room.windows && room.windows.length > 0) {
+      setWindows(room.windows);
+    }
+
+    // Load models
+    if (room.models && room.models.length > 0) {
+      setModels(room.models);
     }
   }, [selectedDesign]);
 
@@ -396,12 +419,12 @@ const FloorPlanPage = () => {
     setWindowPreview(null);
   }, [toolMode, drawingStart, walls, windowParameters, doorParameters]);
 
-  const buildFloorPlanJSON = () => {
+  const buildFloorPlanJSON = (): DesignData => {
     return {
       rooms: [
         {
           id: "room",
-          name: "Room",
+          name: "Main Room",
 
           floors: [
             {
@@ -444,38 +467,59 @@ const FloorPlanPage = () => {
             height: door.height,
             swingDirection: door.swingDirection,
           })),
+
+          detectedRooms: rooms.map((room) => ({
+            id: room.id,
+            // name: `Room ${rooms.indexOf(room) + 1}`,
+            area: room.area,
+            // perimeter: room.perimeter,
+            polygon: room.polygon,
+            centroid: room.centroid,
+          })),
+
+          models: models.map((model) => ({
+            id: model.id,
+            url: model.url,
+            position: model.position,
+            scale: model.scale,
+            rotation: model.rotation,
+            color: model.color,
+          })),
         },
       ],
     };
   };
 
+  // Save design
   const handleSave = async () => {
-    if (!id) return;
+    if (!id) {
+      console.error("Design ID is missing");
+      alert("Design ID is missing");
+      return;
+    }
 
-    const payload = buildFloorPlanJSON();
+    // Build the DesignData structure
+    const designData = buildFloorPlanJSON();
 
     try {
-      const res = await fetch(`http://localhost:3001/designs/${id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          data: payload,
+      // Dispatch the updateDesign action with correct structure
+      const result = await dispatch(
+        updateDesign({
+          id: Number(id),
+          data: {
+            data: designData,
+          },
         }),
-      });
+      ).unwrap();
 
-      if (!res.ok) {
-        throw new Error("Failed to save design");
-      }
-
-      const result = await res.json();
       console.log("Saved design:", result);
-
       alert("Design saved successfully!");
+
+      return result;
     } catch (err) {
       console.error("Save error:", err);
       alert("Failed to save design");
+      throw err;
     }
   };
 
@@ -488,8 +532,6 @@ const FloorPlanPage = () => {
   const updateDoor = (id: string, data: Partial<Door>) => {
     setDoors((prev) => prev.map((d) => (d.id === id ? { ...d, ...data } : d)));
   };
-
-  /* ---------------- Render ---------------- */
 
   return (
     <div className="relative min-h-screen">
@@ -827,6 +869,7 @@ const FloorPlanPage = () => {
             walls={walls || []}
             windows={windows || []}
             doors={doors}
+            models={models}
           />
         )}
       </div>

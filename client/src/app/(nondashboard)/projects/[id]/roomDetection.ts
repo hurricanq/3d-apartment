@@ -130,8 +130,6 @@ export function detectRooms(walls: Wall[]): Room[] {
   }
 
   const rooms: Room[] = [];
-  let roomIndex = 1;
-
   for (const poly of faces) {
     const area = signedArea(poly);
 

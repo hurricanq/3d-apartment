@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useCallback, useEffect } from "react";
 import * as THREE from "three";
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useThree } from "@react-three/fiber";
 import {
   OrbitControls,
   TransformControls,
@@ -35,33 +35,47 @@ import {
   DownloadIcon,
 } from "lucide-react";
 
-import { Wall, Window, Door, Room } from "./types";
+import { Wall, Window, Door, Room, ModelData } from "./types";
 import FurnitureList from "@/components/FurnitureList";
 import MaterialList from "@/components/MaterialList";
 import { TransformControls as TransformControlsImpl } from "three-stdlib";
 import RoomFloor3D from "./RoomFloor3D";
-
-interface ModelData {
-  id: number;
-  url: string;
-  position: [number, number, number];
-  scale?: [number, number, number];
-  rotation?: [number, number, number];
-  color: string;
-}
 
 interface Scene3DProps {
   rooms: Room[];
   walls: Wall[];
   windows: Window[];
   doors?: Door[];
+  models?: ModelData[];
 }
+
+// Helper component to access canvas and renderer
+const CanvasRenderer = ({
+  onReady,
+}: {
+  onReady: (
+    gl: THREE.WebGLRenderer,
+    scene: THREE.Scene,
+    camera: THREE.Camera,
+  ) => void;
+}) => {
+  const { gl, scene, camera } = useThree();
+
+  useEffect(() => {
+    if (gl && scene && camera) {
+      onReady(gl, scene, camera);
+    }
+  }, [gl, scene, camera, onReady]);
+
+  return null;
+};
 
 export default function Scene3D({
   rooms,
   walls,
   windows,
   doors = [],
+  models = [],
 }: Scene3DProps) {
   // Selection states
   const [selectedModel, setSelectedModel] = useState<number | null>(null);
@@ -92,8 +106,11 @@ export default function Scene3D({
     new Map<number, React.RefObject<THREE.Group | null>>(),
   );
   const glRef = useRef<THREE.WebGLRenderer | null>(null);
+  const sceneRef = useRef<THREE.Scene | null>(null);
+  const cameraRef = useRef<THREE.Camera | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  const [models, setModels] = useState<ModelData[]>([]);
+  const [models3D, setModels3D] = useState<ModelData[]>(models);
   const [renderMode, setRenderMode] = useState(false);
 
   const [wallsState, setWallsState] = useState(walls);
@@ -113,14 +130,14 @@ export default function Scene3D({
       rotation: [0, 0, 0],
       color: "#FFFFFF",
     };
-    setModels([...models, newModel]);
+    setModels3D([...models3D, newModel]);
   };
 
   // Remove the selected model
   const removeModel = (): void => {
     if (selectedModel) {
       modelRefs.current.delete(selectedModel);
-      setModels(models.filter((m) => m.id !== selectedModel));
+      setModels3D(models3D.filter((m) => m.id !== selectedModel));
       setSelectedModel(null);
     }
   };
@@ -128,7 +145,7 @@ export default function Scene3D({
   // Duplicate the selected model
   const duplicateModel = (): void => {
     if (selectedModel) {
-      const original = models.find((m) => m.id === selectedModel);
+      const original = models3D.find((m) => m.id === selectedModel);
       if (original) {
         const id = Date.now(); // Unique ID
         const modelRef = React.createRef<THREE.Group>();
@@ -145,7 +162,7 @@ export default function Scene3D({
           rotation: original.rotation,
           color: original.color,
         };
-        setModels([...models, duplicated]);
+        setModels3D([...models3D, duplicated]);
       }
     }
   };
@@ -190,7 +207,7 @@ export default function Scene3D({
   const updateModelColor = (color: string): void => {
     if (!selectedModel) return;
 
-    setModels((prev) =>
+    setModels3D((prev) =>
       prev.map((m) => (m.id === selectedModel ? { ...m, color } : m)),
     );
   };
@@ -200,7 +217,7 @@ export default function Scene3D({
     object.position.y = Math.max(0, Math.min(2.5, object.position.y));
     object.position.z = Math.max(0, Math.min(6, object.position.z));
 
-    setModels((prevModels) =>
+    setModels3D((prevModels) =>
       prevModels.map((m) => {
         if (m.id === selectedModel) {
           const group = modelRefs.current.get(selectedModel)?.current;
@@ -231,14 +248,46 @@ export default function Scene3D({
   };
 
   // Export scene as image
-  const exportImage = (): void => {
-    if (glRef.current) {
-      const link = document.createElement("a");
-      link.download = "scene.png"; // Filename for the download
-      link.href = glRef.current.domElement.toDataURL("image/png"); // Generate PNG data URL
-      link.click(); // Trigger the download
+  const exportImage = useCallback(async (): Promise<void> => {
+    if (!glRef.current || !sceneRef.current || !cameraRef.current) {
+      console.error("Renderer, scene, or camera not ready");
+      alert("Renderer not ready. Please wait for the scene to load.");
+      return;
     }
-  };
+
+    try {
+      const gl = glRef.current;
+      const scene = sceneRef.current;
+      const camera = cameraRef.current;
+      const canvas = gl.domElement;
+
+      // Ensure canvas is fully rendered
+      await new Promise((resolve) => {
+        setTimeout(resolve, 100);
+      });
+
+      // Render the scene with proper arguments
+      gl.render(scene, camera);
+
+      // Get canvas dimensions
+      const width = canvas.width;
+      const height = canvas.height;
+
+      // Convert canvas to data URL
+      const dataURL = canvas.toDataURL("image/png");
+
+      // Create download link
+      const link = document.createElement("a");
+      link.download = `scene-${Date.now()}.png`;
+      link.href = dataURL;
+      link.click();
+
+      console.log("Image exported successfully");
+    } catch (error) {
+      console.error("Export error:", error);
+      alert("Failed to export image");
+    }
+  }, []);
 
   // Render
   return (
@@ -254,8 +303,18 @@ export default function Scene3D({
         }}
         onCreated={(state) => {
           glRef.current = state.gl;
+          canvasRef.current = state.gl.domElement;
         }} // For exporting image
       >
+        {/* Canvas Renderer Helper */}
+        <CanvasRenderer
+          onReady={(gl, scene, camera) => {
+            glRef.current = gl;
+            sceneRef.current = scene;
+            cameraRef.current = camera;
+          }}
+        />
+
         {/* Background */}
         <color
           attach="background"
@@ -365,7 +424,7 @@ export default function Scene3D({
         })}
 
         {/* Furniture */}
-        {models.map((model) => {
+        {models3D.map((model) => {
           if (!modelRefs.current.has(model.id)) {
             modelRefs.current.set(model.id, React.createRef());
           }
@@ -595,7 +654,7 @@ export default function Scene3D({
           <Label className="mb-2 block">Model Color</Label>
           <HexColorPicker
             color={
-              models.find((m) => m.id === selectedModel)?.color || "#ffffff"
+              models3D.find((m) => m.id === selectedModel)?.color || "#ffffff"
             }
             onChange={updateModelColor}
           />

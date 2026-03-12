@@ -1,20 +1,21 @@
-import { Wall } from "@/app/(nondashboard)/projects/[id]/types";
-
-export interface FloorData {
-  id: string;
-  dimensions: {
-    width: number;
-    height: number;
-  };
-  color: string;
-  material: string;
-}
+import {
+  Floor,
+  Wall,
+  Window,
+  Door,
+  ModelData,
+  Room,
+} from "@/app/(nondashboard)/projects/[id]/types";
 
 export interface RoomData {
   id: string;
   name: string;
-  floors: FloorData[];
+  floors: Floor[];
   walls: Wall[];
+  windows: Window[];
+  doors: Door[];
+  detectedRooms: Room[];
+  models: ModelData[];
 }
 
 export interface DesignData {

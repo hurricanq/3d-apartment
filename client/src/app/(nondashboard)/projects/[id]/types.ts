@@ -7,8 +7,12 @@ export interface Point {
 }
 
 export type Floor = {
-  width: number;
-  height: number;
+  id: string;
+  dimensions: {
+    width: number;
+    height: number;
+  };
+  color: string;
   material: string;
 };
 
@@ -51,12 +55,6 @@ export type Door = {
   isOpen?: boolean;
 };
 
-export type elementPreview = {
-  wallId: string;
-  offset: number;
-  width: number;
-};
-
 export type Room = {
   id: string;
   polygon: Point[];
@@ -73,4 +71,19 @@ export type Edge = {
   start: string;
   end: string;
   angle: number;
+};
+
+export type ModelData = {
+  id: number;
+  url: string;
+  position: [number, number, number];
+  scale?: [number, number, number];
+  rotation?: [number, number, number];
+  color: string;
+};
+
+export type elementPreview = {
+  wallId: string;
+  offset: number;
+  width: number;
 };

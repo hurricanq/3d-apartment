@@ -58,7 +58,10 @@ const Model = forwardRef<THREE.Group, ModelProps>(
       <group
         ref={ref}
         {...props}
-        onPointerDown={onClick}
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          onClick?.();
+        }}
         onPointerOver={(e: ThreeEvent<PointerEvent>) => {
           e.stopPropagation();
           setHovered(true);

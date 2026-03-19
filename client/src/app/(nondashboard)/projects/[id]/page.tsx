@@ -475,6 +475,7 @@ const FloorPlanPage = () => {
             // perimeter: room.perimeter,
             polygon: room.polygon,
             centroid: room.centroid,
+            material: room.material,
           })),
 
           models: models.map((model) => ({

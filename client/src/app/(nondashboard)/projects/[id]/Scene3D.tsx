@@ -82,6 +82,7 @@ export default function Scene3D({
   const [selectedWall, setSelectedWall] = useState<string | null>(null);
   const [selectedDoor, setSelectedDoor] = useState<string | null>(null);
   const [selectedWindow, setSelectedWindow] = useState<string | null>(null);
+  const [selectedRoom, setSelectedRoom] = useState<string | null>(null);
   const [hoveredWall, setHoveredWall] = useState<string | null>(null);
 
   // UI modes
@@ -116,6 +117,44 @@ export default function Scene3D({
   const [wallsState, setWallsState] = useState(walls);
   const [doorsState, setDoorsState] = useState(doors);
   const [windowsState, setWindowsState] = useState(windows);
+  const [roomsState, setRoomsState] = useState(rooms);
+  const [hoveredRoom, setHoveredRoom] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if user is typing in input fields
+      const active = document.activeElement;
+      const isTyping =
+        active instanceof HTMLInputElement ||
+        active instanceof HTMLTextAreaElement;
+
+      if (isTyping) return;
+
+      if (e.key === "Delete" && selectedModel) {
+        removeModel();
+      }
+
+      if (!selectedModel) return;
+
+      switch (e.key.toLowerCase()) {
+        case "t":
+          setTransformMode("translate");
+          break;
+        case "r":
+          setTransformMode("rotate");
+          break;
+        case "e":
+          setTransformMode("scale");
+          break;
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [selectedModel, models3D]);
 
   // Add a new model
   const addModel = (modelUrl: string): void => {
@@ -165,6 +204,16 @@ export default function Scene3D({
         setModels3D([...models3D, duplicated]);
       }
     }
+  };
+
+  const updateFloorMaterial = (material: string) => {
+    if (!selectedRoom) return;
+
+    setRoomsState((prev) =>
+      prev.map((room) =>
+        room.id === selectedRoom ? { ...room, material } : room,
+      ),
+    );
   };
 
   // Update wall color
@@ -367,8 +416,13 @@ export default function Scene3D({
         <Grid args={[50, 50]} />
 
         {/* Floor */}
-        {rooms.map((room) => (
-          <RoomFloor3D key={room.id} polygon={room.polygon} material="Maple" />
+        {roomsState.map((room) => (
+          <RoomFloor3D
+            key={room.id}
+            polygon={room.polygon}
+            material={room.material || "Maple"}
+            highlighted={hoveredRoom === room.id}
+          />
         ))}
 
         {/* Walls */}
@@ -473,7 +527,12 @@ export default function Scene3D({
 
       <div className="absolute top-32 left-6 z-10 flex gap-2">
         {/* Add furniture */}
-        <FurnitureList onClick={addModel} />
+        <FurnitureList
+          onClick={addModel}
+          onAdd={() => {
+            // future extension (analytics, toast, etc.)
+          }}
+        />
 
         {/* Camera mode */}
         <Button
@@ -597,6 +656,31 @@ export default function Scene3D({
         </div>
       </div>
 
+      <div className="absolute top-32 right-6 z-10 bg-white p-4 rounded shadow w-64">
+        <Label className="mb-3 block font-semibold">Rooms</Label>
+
+        <div className="flex flex-col gap-2">
+          {roomsState.map((room, index) => (
+            <div
+              key={room.id}
+              className="flex items-center justify-between border p-2 rounded"
+              onMouseEnter={() => setHoveredRoom(room.id)}
+              onMouseLeave={() => setHoveredRoom(null)}
+            >
+              <span>Room {index + 1}</span>
+
+              <Button size="sm" onClick={() => setSelectedRoom(room.id)}>
+                Material
+              </Button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="absolute bottom-5 left-5 text-xs text-gray-500">
+        T: Move | R: Rotate | E: Scale | Delete: Remove
+      </div>
+
       {/* ---------- WALL COLOR PICKER ---------- */}
 
       {selectedWall && (
@@ -655,6 +739,18 @@ export default function Scene3D({
             onChange={updateModelColor}
           />
           <Button className="mt-2" onClick={() => setSelectedModel(null)}>
+            Close
+          </Button>
+        </div>
+      )}
+
+      {selectedRoom && (
+        <div className="absolute right-5 top-1/2 -translate-y-1/2 z-20 bg-white p-4 rounded shadow">
+          <Label className="mb-2 block">Floor Material</Label>
+
+          <MaterialList onClick={updateFloorMaterial} />
+
+          <Button className="mt-2" onClick={() => setSelectedRoom(null)}>
             Close
           </Button>
         </div>

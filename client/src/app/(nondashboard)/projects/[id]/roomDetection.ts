@@ -39,7 +39,7 @@ function projectPointToSegment(p: Point, a: Point, b: Point) {
 
 // Split walls at T-junctions
 function splitWalls(walls: Wall[]): Wall[] {
-  let result = [...walls];
+  const result = [...walls];
 
   for (let i = 0; i < result.length; i++) {
     for (let j = 0; j < result.length; j++) {
@@ -200,6 +200,7 @@ export function detectRooms(walls: Wall[]): Room[] {
         polygon: poly,
         area: Math.abs(area),
         centroid: centroid(poly),
+        material: "Maple",
       });
     }
   }

@@ -60,6 +60,7 @@ export type Room = {
   polygon: Point[];
   area: number;
   centroid: Point;
+  material: string;
 };
 
 export type Node = {

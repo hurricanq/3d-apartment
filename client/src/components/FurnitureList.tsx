@@ -21,8 +21,10 @@ import { ScrollArea } from "./ui/scroll-area";
 
 const FurnitureList = ({
   onClick,
+  onAdd,
 }: {
   onClick?: (modelUrl: string) => void;
+  onAdd?: () => void;
 }) => {
   const [showCategories, setShowCategories] = useState(false);
   const [showFurniture, setShowFurniture] = useState(false);
@@ -94,7 +96,12 @@ const FurnitureList = ({
                 furnitureInCategory.map((fur) => (
                   <div
                     key={fur.id}
-                    onClick={() => onClick?.(fur.modelUrl)}
+                    onClick={() => {
+                      onClick?.(fur.modelUrl);
+                      setShowFurniture(false);
+                      setShowCategories(false);
+                      onAdd?.(); // notify parent (optional but clean)
+                    }}
                     className="space-y-2 p-2 shadow rounded"
                   >
                     <div className="rounded overflow-hidden">

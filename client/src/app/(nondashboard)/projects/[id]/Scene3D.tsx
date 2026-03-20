@@ -16,8 +16,6 @@ import Model from "@/components/Model";
 import FPSCamera from "@/components/FPSCamera";
 
 import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { HexColorPicker } from "react-colorful";
 
@@ -40,6 +38,9 @@ import FurnitureList from "@/components/FurnitureList";
 import MaterialList from "@/components/MaterialList";
 import { TransformControls as TransformControlsImpl } from "three-stdlib";
 import RoomFloor3D from "./RoomFloor3D";
+import RoomsList from "@/components/RoomsList";
+import LightPanel from "@/components/LightPanel";
+import Hotkeys from "@/components/Hotkeys";
 
 interface Scene3DProps {
   rooms: Room[];
@@ -95,10 +96,6 @@ export default function Scene3D({
 
   // Light controls
   const [ambientIntensity, setAmbientIntensity] = useState(1);
-  const [pointIntensity, setPointIntensity] = useState(20);
-  const [pointPosition, setPointPosition] = useState<[number, number, number]>([
-    4, 2, 3,
-  ]);
   const [objectIntensity, setObjectIntensity] = useState(1);
 
   // Refs
@@ -373,11 +370,7 @@ export default function Scene3D({
             <directionalLight position={[5, 10, 5]} intensity={1} castShadow />
           </>
         ) : (
-          <pointLight
-            position={pointPosition}
-            intensity={pointIntensity}
-            castShadow
-          />
+          <></>
         )}
 
         {/* Controls */}
@@ -523,8 +516,7 @@ export default function Scene3D({
         )}
       </Canvas>
 
-      {/* ---------- UI TOOLBAR ---------- */}
-
+      {/* Left UIs */}
       <div className="absolute top-32 left-6 z-10 flex gap-2">
         {/* Add furniture */}
         <FurnitureList
@@ -550,13 +542,6 @@ export default function Scene3D({
           {dayNight === "day" ? <MoonIcon /> : <SunIcon />}
         </Button>
 
-        <Button
-          variant={renderMode ? "destructive" : "default"}
-          onClick={() => setRenderMode(!renderMode)}
-        >
-          <CameraIcon />
-        </Button>
-
         {/* Materials */}
         {selectedWall && <MaterialList onClick={handleChangeMaterial} />}
 
@@ -580,105 +565,51 @@ export default function Scene3D({
             </Button>
           </>
         )}
+      </div>
 
-        {renderMode && (
-          <>
+      {/* Top Right UIs */}
+      <div className="absolute top-18 right-6 z-10 flex gap-2">
+        {/* Rooms List */}
+        <RoomsList
+          rooms={roomsState}
+          selectedRoom={selectedRoom}
+          onHover={(id) => setHoveredRoom(id)}
+          onLeave={() => setHoveredRoom(null)}
+          onSelect={(id) => setSelectedRoom(id)}
+          onChangeMaterial={updateFloorMaterial}
+          onClose={() => setSelectedRoom(null)}
+        />
+
+        {/* Light Panel */}
+        <LightPanel
+          dayNight={dayNight}
+          ambientIntensity={ambientIntensity}
+          objectIntensity={objectIntensity}
+          onAmbientChange={(v) => setAmbientIntensity(v[0])}
+          onObjectChange={(v) => setObjectIntensity(v[0])}
+        />
+
+        {/* Export Image Button */}
+        <div className="flex flex-col space-y-2">
+          <Button
+            variant={renderMode ? "destructive" : "default"}
+            onClick={() => setRenderMode(!renderMode)}
+          >
+            <CameraIcon />
+          </Button>
+
+          {renderMode && (
             <Button onClick={exportImage}>
               {" "}
               <DownloadIcon />
             </Button>
-          </>
-        )}
-      </div>
-
-      {/* ---------- LIGHT PANEL ---------- */}
-
-      <div className="absolute bottom-5 right-5 z-10 bg-white p-3 rounded shadow">
-        <div className="flex flex-col gap-3">
-          {dayNight === "day" && (
-            <div className="space-y-3">
-              <Label>Ambient Light Intensity</Label>
-              <Slider
-                value={[ambientIntensity]}
-                onValueChange={(v) => setAmbientIntensity(v[0])}
-                min={0}
-                max={5}
-                step={0.1}
-              />
-            </div>
-          )}
-
-          <div className="space-y-3">
-            <Label>Object Light Intensity</Label>
-            <Slider
-              value={[objectIntensity]}
-              onValueChange={(v) => setObjectIntensity(v[0])}
-              min={0}
-              max={20}
-              step={0.1}
-            />
-          </div>
-
-          {dayNight === "night" && (
-            <div className="space-y-3">
-              <Label>Point Light Intensity</Label>
-              <Slider
-                value={[pointIntensity]}
-                onValueChange={(v) => setPointIntensity(v[0])}
-                min={0}
-                max={50}
-                step={1}
-              />
-
-              <Label>Point Light Position</Label>
-              <div className="flex gap-2">
-                {["X", "Y", "Z"].map((axis, i) => (
-                  <Input
-                    key={axis}
-                    type="number"
-                    value={pointPosition[i]}
-                    onChange={(e) => {
-                      const v = parseFloat(e.target.value) || 0;
-                      const arr = [...pointPosition] as [
-                        number,
-                        number,
-                        number,
-                      ];
-                      arr[i] = v;
-                      setPointPosition(arr);
-                    }}
-                    className="w-16"
-                  />
-                ))}
-              </div>
-            </div>
           )}
         </div>
       </div>
 
-      <div className="absolute top-32 right-6 z-10 bg-white p-4 rounded shadow w-64">
-        <Label className="mb-3 block font-semibold">Rooms</Label>
-
-        <div className="flex flex-col gap-2">
-          {roomsState.map((room, index) => (
-            <div
-              key={room.id}
-              className="flex items-center justify-between border p-2 rounded"
-              onMouseEnter={() => setHoveredRoom(room.id)}
-              onMouseLeave={() => setHoveredRoom(null)}
-            >
-              <span>Room {index + 1}</span>
-
-              <Button size="sm" onClick={() => setSelectedRoom(room.id)}>
-                Material
-              </Button>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="absolute bottom-5 left-5 text-xs text-gray-500">
-        T: Move | R: Rotate | E: Scale | Delete: Remove
+      {/* Bottom Right UIs */}
+      <div className="absolute bottom-6 right-6 z-10 flex gap-2">
+        <Hotkeys />
       </div>
 
       {/* ---------- WALL COLOR PICKER ---------- */}
@@ -739,18 +670,6 @@ export default function Scene3D({
             onChange={updateModelColor}
           />
           <Button className="mt-2" onClick={() => setSelectedModel(null)}>
-            Close
-          </Button>
-        </div>
-      )}
-
-      {selectedRoom && (
-        <div className="absolute right-5 top-1/2 -translate-y-1/2 z-20 bg-white p-4 rounded shadow">
-          <Label className="mb-2 block">Floor Material</Label>
-
-          <MaterialList onClick={updateFloorMaterial} />
-
-          <Button className="mt-2" onClick={() => setSelectedRoom(null)}>
             Close
           </Button>
         </div>

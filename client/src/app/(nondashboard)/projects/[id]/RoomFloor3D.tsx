@@ -20,7 +20,7 @@ export default function RoomFloor3D({
   const texture = useTexture(`/textures/${material}.jpg`);
 
   texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-  texture.repeat.set(4, 4);
+  texture.repeat.set(1, 1);
 
   // Create floor geometry from polygon
   const geometry = useMemo(() => {

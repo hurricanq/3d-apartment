@@ -33,9 +33,21 @@ const materials = [
     id: "dark-grey",
     name: "Dark Grey",
   },
+  {
+    id: "white-squares",
+    name: "White Squares",
+  },
 ];
 
-const MaterialList = ({ onClick }: { onClick?: (name: string) => void }) => {
+const MaterialList = ({
+  height = "500",
+  width = "300",
+  onClick,
+}: {
+  height?: string;
+  width?: string;
+  onClick?: (name: string) => void;
+}) => {
   const [showMaterials, setShowMaterials] = useState(false);
 
   return (
@@ -54,7 +66,9 @@ const MaterialList = ({ onClick }: { onClick?: (name: string) => void }) => {
       <div className="flex gap-2">
         {/* Material List */}
         {showMaterials && (
-          <ScrollArea className="h-[500px] w-[300px] rounded-md border p-4 bg-white">
+          <ScrollArea
+            className={`h-[${height}px] w-[${width}px] rounded-md border p-4 bg-white`}
+          >
             <div className="grid grid-cols-2 gap-2">
               {materials.map((mat) => (
                 <div

@@ -31,6 +31,7 @@ import {
   TrashIcon,
   CameraIcon,
   DownloadIcon,
+  X,
 } from "lucide-react";
 
 import { Wall, Window, Door, Room, ModelData } from "./types";
@@ -41,6 +42,7 @@ import RoomFloor3D from "./RoomFloor3D";
 import RoomsList from "@/components/RoomsList";
 import LightPanel from "@/components/LightPanel";
 import Hotkeys from "@/components/Hotkeys";
+import { Input } from "@/components/ui/input";
 
 interface Scene3DProps {
   rooms: Room[];
@@ -119,7 +121,6 @@ export default function Scene3D({
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignore if user is typing in input fields
       const active = document.activeElement;
       const isTyping =
         active instanceof HTMLInputElement ||
@@ -127,13 +128,20 @@ export default function Scene3D({
 
       if (isTyping) return;
 
-      if (e.key === "Delete" && selectedModel) {
-        removeModel();
-      }
-
       if (!selectedModel) return;
 
+      const group = modelRefs.current.get(selectedModel)?.current;
+      if (!group) return;
+
+      const step = THREE.MathUtils.degToRad(5);
+
       switch (e.key.toLowerCase()) {
+        // Delete model
+        case "delete":
+          removeModel();
+          break;
+
+        // Transform mode keys
         case "t":
           setTransformMode("translate");
           break;
@@ -143,15 +151,74 @@ export default function Scene3D({
         case "e":
           setTransformMode("scale");
           break;
+
+        // Translation keys
+        case "arrowleft":
+          group.position.x -= step;
+          break;
+        case "arrowright":
+          group.position.x += step;
+          break;
+        case "c":
+          group.position.y -= step;
+          break;
+        case "z":
+          group.position.y += step;
+          break;
+        case "arrowup":
+          group.position.z -= step;
+          break;
+        case "arrowdown":
+          group.position.z += step;
+          break;
+
+        // Rotation keys
+        case "d":
+          group.rotation.y += step;
+          break;
+        case "a":
+          group.rotation.y -= step;
+          break;
+
+        // Scale keys
+        case "m":
+          group.scale.x += 0.1;
+          group.scale.y += 0.1;
+          group.scale.z += 0.1;
+          break;
+        case "n":
+          group.scale.x -= 0.1;
+          group.scale.y -= 0.1;
+          group.scale.z -= 0.1;
+          break;
       }
+
+      // Sync back to state
+      setModels3D((prev) =>
+        prev.map((m) =>
+          m.id === selectedModel
+            ? {
+                ...m,
+                position: [
+                  group.position.x,
+                  group.position.y,
+                  group.position.z,
+                ],
+                rotation: [
+                  group.rotation.x,
+                  group.rotation.y,
+                  group.rotation.z,
+                ],
+                scale: [group.scale.x, group.scale.y, group.scale.z],
+              }
+            : m,
+        ),
+      );
     };
 
     window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [selectedModel, models3D]);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedModel]);
 
   // Add a new model
   const addModel = (modelUrl: string): void => {
@@ -612,41 +679,95 @@ export default function Scene3D({
         <Hotkeys />
       </div>
 
-      {/* ---------- WALL COLOR PICKER ---------- */}
-
+      {/* Element Panel */}
       {selectedWall && (
-        <div className="absolute right-5 top-1/2 -translate-y-1/2 z-20 bg-white p-4 rounded shadow">
-          <Label className="mb-2 block">Wall Color</Label>
+        <div className="absolute right-5 top-1/2 -translate-y-1/2 z-20 bg-white p-4 rounded shadow flex flex-col space-y-4">
+          <div className="flex items-center justify-between">
+            <Label>Wall Color</Label>
+
+            <Button onClick={() => setSelectedWall(null)}>
+              <X />
+            </Button>
+          </div>
+
           <HexColorPicker
             color={
               wallsState.find((w) => w.id === selectedWall)?.color || "#ffffff"
             }
             onChange={updateWallColor}
           />
-          <Button className="mt-2" onClick={() => setSelectedWall(null)}>
-            Close
-          </Button>
+
+          {/* Hex Input */}
+          <Input
+            value={
+              wallsState.find((w) => w.id === selectedWall)?.color || "#ffffff"
+            }
+            onChange={(e) => {
+              let value = e.target.value;
+
+              // Ensure it starts with #
+              if (!value.startsWith("#")) value = "#" + value;
+
+              // Optional: basic validation (only allow hex format)
+              if (/^#([0-9A-Fa-f]{0,6})$/.test(value)) {
+                updateWallColor(value);
+              }
+            }}
+            placeholder="#ffffff"
+          />
         </div>
       )}
 
       {selectedDoor && (
-        <div className="absolute right-5 top-1/2 -translate-y-1/2 z-20 bg-white p-4 rounded shadow">
-          <Label className="mb-2 block">Door Color</Label>
+        <div className="absolute right-5 top-1/2 -translate-y-1/2 z-20 bg-white p-4 rounded shadow flex flex-col space-y-4">
+          <div className="flex items-center justify-between">
+            <Label>Door Color</Label>
+
+            <Button onClick={() => setSelectedDoor(null)}>
+              <X />
+            </Button>
+          </div>
+
           <HexColorPicker
             color={
               doorsState.find((d) => d.id === selectedDoor)?.color || "#8b5a2b"
             }
             onChange={updateDoorColor}
           />
-          <Button className="mt-2" onClick={() => setSelectedDoor(null)}>
-            Close
-          </Button>
+
+          {/* Hex Input */}
+          <Input
+            value={
+              doorsState.find((d) => d.id === selectedDoor)?.color || "#ffffff"
+            }
+            onChange={(e) => {
+              let value = e.target.value;
+
+              // Ensure it starts with #
+              if (!value.startsWith("#")) value = "#" + value;
+
+              // Optional: basic validation (only allow hex format)
+              if (/^#([0-9A-Fa-f]{0,6})$/.test(value)) {
+                updateDoorColor(value);
+              }
+            }}
+            placeholder="#ffffff"
+          />
+
+          <Button onClick={() => setSelectedDoor(null)}>Close</Button>
         </div>
       )}
 
       {selectedWindow && (
-        <div className="absolute right-5 top-1/2 -translate-y-1/2 z-20 bg-white p-4 rounded shadow">
-          <Label className="mb-2 block">Window Color</Label>
+        <div className="absolute right-5 top-1/2 -translate-y-1/2 z-20 bg-white p-4 rounded shadow flex flex-col space-y-4">
+          <div className="flex items-center justify-between">
+            <Label>Window Color</Label>
+
+            <Button onClick={() => setSelectedWindow(null)}>
+              <X />
+            </Button>
+          </div>
+
           <HexColorPicker
             color={
               windowsState.find((w) => w.id === selectedWindow)?.color ||
@@ -654,24 +775,190 @@ export default function Scene3D({
             }
             onChange={updateWindowColor}
           />
-          <Button className="mt-2" onClick={() => setSelectedWindow(null)}>
-            Close
-          </Button>
+
+          {/* Hex Input */}
+          <Input
+            value={
+              windowsState.find((w) => w.id === selectedWindow)?.color ||
+              "#ffffff"
+            }
+            onChange={(e) => {
+              let value = e.target.value;
+
+              // Ensure it starts with #
+              if (!value.startsWith("#")) value = "#" + value;
+
+              // Optional: basic validation (only allow hex format)
+              if (/^#([0-9A-Fa-f]{0,6})$/.test(value)) {
+                updateWindowColor(value);
+              }
+            }}
+            placeholder="#ffffff"
+          />
         </div>
       )}
 
       {selectedModel && (
-        <div className="absolute right-5 top-1/2 -translate-y-1/2 z-20 bg-white p-4 rounded shadow">
-          <Label className="mb-2 block">Model Color</Label>
+        <div className="absolute right-5 top-1/2 -translate-y-1/2 z-20 bg-white p-4 rounded shadow flex flex-col space-y-4">
+          <div className="flex items-center justify-between">
+            <Label>Model Color</Label>
+
+            <Button onClick={() => setSelectedModel(null)}>
+              <X />
+            </Button>
+          </div>
+
           <HexColorPicker
             color={
               models3D.find((m) => m.id === selectedModel)?.color || "#ffffff"
             }
             onChange={updateModelColor}
           />
-          <Button className="mt-2" onClick={() => setSelectedModel(null)}>
-            Close
-          </Button>
+
+          {/* Hex Input */}
+          <Input
+            value={
+              models3D.find((m) => m.id === selectedModel)?.color || "#ffffff"
+            }
+            onChange={(e) => {
+              let value = e.target.value;
+
+              // Ensure it starts with #
+              if (!value.startsWith("#")) value = "#" + value;
+
+              // Optional: basic validation (only allow hex format)
+              if (/^#([0-9A-Fa-f]{0,6})$/.test(value)) {
+                updateModelColor(value);
+              }
+            }}
+            placeholder="#ffffff"
+          />
+
+          {/* Position Inputs */}
+          <Label className="mb-2 block">Position</Label>
+          <div className="flex gap-2">
+            {["X", "Y", "Z"].map((axis, i) => {
+              const model = models3D.find((m) => m.id === selectedModel);
+
+              return (
+                <Input
+                  key={`pos-${axis}`}
+                  type="number"
+                  value={model ? model.position[i].toFixed(1) : 0}
+                  step={0.1}
+                  onChange={(e) => {
+                    const val = parseFloat(e.target.value) || 0;
+
+                    const group = modelRefs.current.get(
+                      selectedModel!,
+                    )?.current;
+                    if (!group) return;
+
+                    if (i === 0) group.position.x = val;
+                    if (i === 1) group.position.y = val;
+                    if (i === 2) group.position.z = val;
+
+                    clampPosition(group); // keep constraints + sync state
+                  }}
+                  className="w-16"
+                />
+              );
+            })}
+          </div>
+
+          {/* Rotation Inputs */}
+          <Label className="mb-2 block">Model Rotation in °</Label>
+          <div className="flex gap-2">
+            {["X", "Y", "Z"].map((axis, i) => {
+              const model = models3D.find((m) => m.id === selectedModel);
+
+              return (
+                <Input
+                  key={axis}
+                  type="number"
+                  value={
+                    model?.rotation
+                      ? Math.round(THREE.MathUtils.radToDeg(model.rotation[i]))
+                      : 0
+                  }
+                  onChange={(e) => {
+                    const deg = parseFloat(e.target.value) || 0;
+                    const rad = THREE.MathUtils.degToRad(deg);
+
+                    const group = modelRefs.current.get(selectedModel)?.current;
+                    if (!group) return;
+
+                    if (i === 0) group.rotation.x = rad;
+                    if (i === 1) group.rotation.y = rad;
+                    if (i === 2) group.rotation.z = rad;
+
+                    setModels3D((prev) =>
+                      prev.map((m) =>
+                        m.id === selectedModel
+                          ? {
+                              ...m,
+                              rotation: [
+                                group.rotation.x,
+                                group.rotation.y,
+                                group.rotation.z,
+                              ],
+                            }
+                          : m,
+                      ),
+                    );
+                  }}
+                  className="w-16"
+                />
+              );
+            })}
+          </div>
+
+          {/* Scale Inputs */}
+          <Label className="mb-2 block">Scale</Label>
+          <div className="flex gap-2">
+            {["X", "Y", "Z"].map((axis, i) => {
+              const model = models3D.find((m) => m.id === selectedModel);
+
+              return (
+                <Input
+                  key={`scale-${axis}`}
+                  type="number"
+                  value={model && model.scale ? model.scale[i].toFixed(1) : 1}
+                  step={0.1}
+                  min={0.1}
+                  onChange={(e) => {
+                    const val = Math.max(0.1, parseFloat(e.target.value) || 1);
+
+                    const group = modelRefs.current.get(
+                      selectedModel!,
+                    )?.current;
+                    if (!group) return;
+
+                    if (i === 0) group.scale.x = val;
+                    if (i === 1) group.scale.y = val;
+                    if (i === 2) group.scale.z = val;
+
+                    // sync state
+                    setModels3D((prev) =>
+                      prev.map((m) =>
+                        m.id === selectedModel
+                          ? {
+                              ...m,
+                              scale: [
+                                group.scale.x,
+                                group.scale.y,
+                                group.scale.z,
+                              ],
+                            }
+                          : m,
+                      ),
+                    );
+                  }}
+                  className="w-16"
+                />
+              );
+            })}
+          </div>
         </div>
       )}
     </>

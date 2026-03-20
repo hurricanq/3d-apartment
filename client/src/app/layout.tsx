@@ -7,7 +7,6 @@ import { Providers } from "./providers";
 import NextTopLoader from "nextjs-toploader";
 
 import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -32,7 +31,6 @@ export default function RootLayout({
           <main className="pt-2">
             <Providers>{children}</Providers>
           </main>
-          <Footer />
         </body>
       </html>
     </ClerkProvider>

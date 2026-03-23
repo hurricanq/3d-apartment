@@ -50,6 +50,7 @@ interface Scene3DProps {
   windows: Window[];
   doors?: Door[];
   models?: ModelData[];
+  setModels?: React.Dispatch<React.SetStateAction<ModelData[]>>;
 }
 
 // Helper component to access canvas and renderer
@@ -79,6 +80,7 @@ export default function Scene3D({
   windows,
   doors = [],
   models = [],
+  setModels,
 }: Scene3DProps) {
   // Selection states
   const [selectedModel, setSelectedModel] = useState<number | null>(null);
@@ -110,7 +112,8 @@ export default function Scene3D({
   const cameraRef = useRef<THREE.Camera | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  const [models3D, setModels3D] = useState<ModelData[]>(models);
+  const models3D = models;
+  const setModels3D = setModels!;
   const [renderMode, setRenderMode] = useState(false);
 
   const [wallsState, setWallsState] = useState(walls);
@@ -128,7 +131,7 @@ export default function Scene3D({
 
       if (isTyping) return;
 
-      if (!selectedModel) return;
+      if (selectedModel == null) return;
 
       const group = modelRefs.current.get(selectedModel)?.current;
       if (!group) return;

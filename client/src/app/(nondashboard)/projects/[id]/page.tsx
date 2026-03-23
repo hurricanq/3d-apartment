@@ -871,6 +871,7 @@ const FloorPlanPage = () => {
             windows={windows || []}
             doors={doors}
             models={models}
+            setModels={setModels}
           />
         )}
       </div>

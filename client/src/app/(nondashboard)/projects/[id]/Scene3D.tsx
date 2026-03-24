@@ -43,6 +43,8 @@ import RoomsList from "@/components/RoomsList";
 import LightPanel from "@/components/LightPanel";
 import Hotkeys from "@/components/Hotkeys";
 import { Input } from "@/components/ui/input";
+import { useSelection } from "./_hooks/useSelection";
+import { useTransform } from "./_hooks/useTransform";
 
 interface Scene3DProps {
   rooms: Room[];
@@ -82,13 +84,67 @@ export default function Scene3D({
   models = [],
   setModels,
 }: Scene3DProps) {
-  // Selection states
-  const [selectedModel, setSelectedModel] = useState<number | null>(null);
-  const [selectedWall, setSelectedWall] = useState<string | null>(null);
-  const [selectedDoor, setSelectedDoor] = useState<string | null>(null);
-  const [selectedWindow, setSelectedWindow] = useState<string | null>(null);
-  const [selectedRoom, setSelectedRoom] = useState<string | null>(null);
-  const [hoveredWall, setHoveredWall] = useState<string | null>(null);
+  // Refs
+  const transformRef = useRef<TransformControlsImpl>(null);
+  const modelRefs = useRef(
+    new Map<number, React.RefObject<THREE.Group | null>>(),
+  );
+  const glRef = useRef<THREE.WebGLRenderer | null>(null);
+  const sceneRef = useRef<THREE.Scene | null>(null);
+  const cameraRef = useRef<THREE.Camera | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  const models3D = models;
+  const setModels3D = setModels!;
+
+  const {
+    selectedModel,
+    selectedWall,
+    selectedDoor,
+    selectedWindow,
+    selectedRoom,
+    hoveredWall,
+    hoveredRoom,
+    setSelectedModel,
+    setSelectedWall,
+    setSelectedDoor,
+    setSelectedWindow,
+    setSelectedRoom,
+    setHoveredWall,
+    setHoveredRoom,
+    selectModel,
+    selectWall,
+    selectDoor,
+    selectWindow,
+    clearSelection,
+  } = useSelection();
+
+  const { clampObject, syncModelState, handleKeyTransform } = useTransform(
+    selectedModel,
+    modelRefs,
+    setModels3D,
+  );
+
+  // Keyboard controls
+  useEffect(() => {
+    window.addEventListener("keydown", handleKeyTransform);
+    return () => window.removeEventListener("keydown", handleKeyTransform);
+  }, [handleKeyTransform]);
+
+  useEffect(() => {
+    models3D.forEach((model) => {
+      if (!modelRefs.current.has(model.id)) {
+        modelRefs.current.set(model.id, React.createRef());
+      }
+    });
+
+    // Cleanup removed models
+    modelRefs.current.forEach((_, key) => {
+      if (!models3D.find((m) => m.id === key)) {
+        modelRefs.current.delete(key);
+      }
+    });
+  }, [models3D]);
 
   // UI modes
   const [cameraMode, setCameraMode] = useState<"orbit" | "fps">("orbit");
@@ -102,25 +158,12 @@ export default function Scene3D({
   const [ambientIntensity, setAmbientIntensity] = useState(1);
   const [objectIntensity, setObjectIntensity] = useState(1);
 
-  // Refs
-  const transformRef = useRef<TransformControlsImpl>(null);
-  const modelRefs = useRef(
-    new Map<number, React.RefObject<THREE.Group | null>>(),
-  );
-  const glRef = useRef<THREE.WebGLRenderer | null>(null);
-  const sceneRef = useRef<THREE.Scene | null>(null);
-  const cameraRef = useRef<THREE.Camera | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-
-  const models3D = models;
-  const setModels3D = setModels!;
   const [renderMode, setRenderMode] = useState(false);
 
   const [wallsState, setWallsState] = useState(walls);
   const [doorsState, setDoorsState] = useState(doors);
   const [windowsState, setWindowsState] = useState(windows);
   const [roomsState, setRoomsState] = useState(rooms);
-  const [hoveredRoom, setHoveredRoom] = useState<string | null>(null);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -135,8 +178,6 @@ export default function Scene3D({
 
       const group = modelRefs.current.get(selectedModel)?.current;
       if (!group) return;
-
-      const step = THREE.MathUtils.degToRad(5);
 
       switch (e.key.toLowerCase()) {
         // Delete model
@@ -153,46 +194,6 @@ export default function Scene3D({
           break;
         case "e":
           setTransformMode("scale");
-          break;
-
-        // Translation keys
-        case "arrowleft":
-          group.position.x -= step;
-          break;
-        case "arrowright":
-          group.position.x += step;
-          break;
-        case "c":
-          group.position.y -= step;
-          break;
-        case "z":
-          group.position.y += step;
-          break;
-        case "arrowup":
-          group.position.z -= step;
-          break;
-        case "arrowdown":
-          group.position.z += step;
-          break;
-
-        // Rotation keys
-        case "d":
-          group.rotation.y += step;
-          break;
-        case "a":
-          group.rotation.y -= step;
-          break;
-
-        // Scale keys
-        case "m":
-          group.scale.x += 0.1;
-          group.scale.y += 0.1;
-          group.scale.z += 0.1;
-          break;
-        case "n":
-          group.scale.x -= 0.1;
-          group.scale.y -= 0.1;
-          group.scale.z -= 0.1;
           break;
       }
 
@@ -328,41 +329,6 @@ export default function Scene3D({
     );
   };
 
-  const clampPosition = (object: THREE.Object3D): void => {
-    object.position.x = Math.max(0, Math.min(8, object.position.x));
-    object.position.y = Math.max(0, Math.min(2.5, object.position.y));
-    object.position.z = Math.max(0, Math.min(6, object.position.z));
-
-    setModels3D((prevModels) =>
-      prevModels.map((m) => {
-        if (m.id === selectedModel) {
-          const group = modelRefs.current.get(selectedModel)?.current;
-          if (group) {
-            return {
-              ...m,
-              position: [
-                group.position.x,
-                group.position.y,
-                group.position.z,
-              ] as [number, number, number],
-              rotation: [
-                group.rotation.x,
-                group.rotation.y,
-                group.rotation.z,
-              ] as [number, number, number],
-              scale: [group.scale.x, group.scale.y, group.scale.z] as [
-                number,
-                number,
-                number,
-              ],
-            };
-          }
-        }
-        return m;
-      }),
-    );
-  };
-
   // Export scene as image
   const exportImage = useCallback(async (): Promise<void> => {
     if (!glRef.current || !sceneRef.current || !cameraRef.current) {
@@ -407,12 +373,7 @@ export default function Scene3D({
       <Canvas
         shadows
         camera={{ position: [6, 5, 6], fov: 60 }}
-        onPointerMissed={() => {
-          setSelectedModel(null);
-          setSelectedWall(null);
-          setSelectedDoor(null);
-          setSelectedWindow(null);
-        }}
+        onPointerMissed={clearSelection}
         onCreated={(state) => {
           glRef.current = state.gl;
           canvasRef.current = state.gl.domElement;
@@ -468,8 +429,8 @@ export default function Scene3D({
               position={[10, 15, 10]}
               intensity={1.2}
               castShadow
-              shadow-mapSize-width={2048}
-              shadow-mapSize-height={2048}
+              shadow-mapSize-width={1024}
+              shadow-mapSize-height={1024}
             />
             <directionalLight position={[-10, 5, -10]} intensity={0.6} />
           </>
@@ -503,20 +464,12 @@ export default function Scene3D({
               windows={wallWindows}
               doors={wallDoors}
               highlighted={isHovered || isSelected}
-              onClick={() => {
-                setSelectedWall(wall.id);
-                setSelectedModel(null);
-                setSelectedDoor(null);
-                setSelectedWindow(null);
-              }}
+              onClick={() => selectWall(wall.id)}
               onHover={(hover: boolean) =>
                 setHoveredWall(hover ? wall.id : null)
               }
               onDoorClick={(doorId) => {
-                setSelectedDoor(doorId);
-                setSelectedModel(null);
-                setSelectedWall(null);
-                setSelectedWindow(null);
+                selectDoor(doorId);
                 // Toggle door open/close
                 setDoorsState((prevDoors) =>
                   prevDoors.map((door) =>
@@ -526,22 +479,13 @@ export default function Scene3D({
                   ),
                 );
               }}
-              onWindowClick={(windowId) => {
-                setSelectedWindow(windowId);
-                setSelectedModel(null);
-                setSelectedWall(null);
-                setSelectedDoor(null);
-              }}
+              onWindowClick={(windowId) => selectWindow(windowId)}
             />
           );
         })}
 
         {/* Furniture */}
         {models3D.map((model) => {
-          if (!modelRefs.current.has(model.id)) {
-            modelRefs.current.set(model.id, React.createRef());
-          }
-
           return (
             <Model
               key={model.id}
@@ -550,22 +494,17 @@ export default function Scene3D({
               position={model.position}
               scale={model.scale}
               rotation={model.rotation}
-              onClick={() => {
-                setSelectedModel(model.id);
-                setSelectedWall(null);
-                setSelectedDoor(null);
-                setSelectedWindow(null);
-              }}
+              onClick={() => selectModel(model.id)}
             >
               {/* If this model should emit light */}
               {model.url.includes("lamp") ||
                 (model.url.includes("light") && (
                   <pointLight
                     intensity={objectIntensity}
-                    distance={5}
+                    distance={20} // increase range
+                    decay={2} // physically correct falloff
                     color="#ffffff"
                     position={[0, 1, 0]}
-                    castShadow
                   />
                 ))}
             </Model>
@@ -578,9 +517,12 @@ export default function Scene3D({
             ref={transformRef}
             object={modelRefs.current.get(selectedModel)!.current!}
             mode={transformMode}
-            onObjectChange={() => {
+            onMouseUp={() => {
               const obj = modelRefs.current.get(selectedModel!)?.current;
-              if (obj) clampPosition(obj);
+              if (obj) {
+                clampObject(obj); // keep constraints
+                syncModelState(obj); // update ONCE
+              }
             }}
           />
         )}
@@ -861,7 +803,7 @@ export default function Scene3D({
                     if (i === 1) group.position.y = val;
                     if (i === 2) group.position.z = val;
 
-                    clampPosition(group); // keep constraints + sync state
+                    clampObject(group); // keep constraints + sync state
                   }}
                   className="w-16"
                 />

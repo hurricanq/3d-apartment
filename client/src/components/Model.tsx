@@ -82,4 +82,4 @@ const Model = forwardRef<THREE.Group, ModelProps>(
 
 Model.displayName = "Model";
 
-export default Model;
+export default React.memo(Model);

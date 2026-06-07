@@ -107,9 +107,9 @@ const Furniture = ({ search, sort }: FurnitureProps) => {
       await dispatch(deleteFurniture(deletingFurnitureId)).unwrap();
       toast.success("Furniture deleted successfully!");
       setIsDeleteDialogOpen(false);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      toast.error(err.message || "Failed to delete furniture");
+      toast.error((err as Error).message || "Failed to delete furniture");
     } finally {
       setDeleteLoading(false);
       setDeletingFurnitureId(null);

@@ -117,14 +117,14 @@ export default function FurnitureDialog({
             thumbnailUrl: thumbnailUrl.trim(),
             modelUrl: modelUrl.trim(),
             categoryId,
-          } as any) // Backend and slices accept id if passed in payload
+          })
         ).unwrap();
         toast.success("Furniture created successfully!");
       }
       setOpen(false);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      toast.error(err.message || "Failed to save furniture");
+      toast.error((err as Error).message || "Failed to save furniture");
     } finally {
       setLoading(false);
     }

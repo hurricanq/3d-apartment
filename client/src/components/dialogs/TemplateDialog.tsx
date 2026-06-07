@@ -160,9 +160,9 @@ export default function TemplateDialog({
     setWalls(walls.filter((_, i) => i !== index));
   };
 
-  const updateWallField = (index: number, field: keyof WallInput, value: any) => {
+  const updateWallField = <K extends keyof WallInput>(index: number, field: K, value: WallInput[K]) => {
     setWalls(
-      walls.map((w, i) => (i === index ? { ...w, [field]: value } : w))
+      walls.map((w, i) => (i === index ? ({ ...w, [field]: value } as WallInput) : w))
     );
   };
 
@@ -248,9 +248,9 @@ export default function TemplateDialog({
         toast.success("Template created successfully!");
       }
       setOpen(false);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      toast.error(err.message || "Failed to save template");
+      toast.error((err as Error).message || "Failed to save template");
     } finally {
       setLoading(false);
     }
@@ -265,7 +265,7 @@ export default function TemplateDialog({
             {isEdit ? "Update Template" : "Create Room Template"}
           </DialogTitle>
           <DialogDescription className="text-neutral-400">
-            Fill in the information below to configure the template's room, walls, and flooring details.
+            Fill in the information below to configure the template&apos;s room, walls, and flooring details.
           </DialogDescription>
         </DialogHeader>
 

@@ -42,7 +42,7 @@ export const fetchFurnitureByCategory = createAsyncThunk("furniture/fetchByCateg
 });
 
 // Create new furniture
-export const createFurniture = createAsyncThunk("furniture/create", async (furnitureData: Omit<Furniture, "id" | "createdAt" | "updatedAt">) => {
+export const createFurniture = createAsyncThunk("furniture/create", async (furnitureData: Omit<Furniture, "createdAt" | "updatedAt">) => {
     const response = await axios.post(API_BASE_URL, furnitureData);
     return response.data as Furniture;
 });

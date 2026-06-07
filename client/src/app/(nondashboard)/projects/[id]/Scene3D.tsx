@@ -14,6 +14,7 @@ import {
 import Wall3D from "./Wall3D";
 import Model from "@/components/Model";
 import FPSCamera from "@/components/FPSCamera";
+import Ceiling3D from "./Ceiling3D";
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -48,9 +49,13 @@ import { useTransform } from "./_hooks/useTransform";
 
 interface Scene3DProps {
   rooms: Room[];
+  setRooms: React.Dispatch<React.SetStateAction<Room[]>>;
   walls: Wall[];
+  setWalls: React.Dispatch<React.SetStateAction<Wall[]>>;
   windows: Window[];
+  setWindows: React.Dispatch<React.SetStateAction<Window[]>>;
   doors?: Door[];
+  setDoors: React.Dispatch<React.SetStateAction<Door[]>>;
   models?: ModelData[];
   setModels?: React.Dispatch<React.SetStateAction<ModelData[]>>;
 }
@@ -78,9 +83,13 @@ const CanvasRenderer = ({
 
 export default function Scene3D({
   rooms,
+  setRooms,
   walls,
+  setWalls,
   windows,
+  setWindows,
   doors = [],
+  setDoors,
   models = [],
   setModels,
 }: Scene3DProps) {
@@ -123,6 +132,7 @@ export default function Scene3D({
     selectedModel,
     modelRefs,
     setModels3D,
+    walls,
   );
 
   // Keyboard controls
@@ -160,10 +170,14 @@ export default function Scene3D({
 
   const [renderMode, setRenderMode] = useState(false);
 
-  const [wallsState, setWallsState] = useState(walls);
-  const [doorsState, setDoorsState] = useState(doors);
-  const [windowsState, setWindowsState] = useState(windows);
-  const [roomsState, setRoomsState] = useState(rooms);
+  const wallsState = walls;
+  const setWallsState = setWalls;
+  const doorsState = doors;
+  const setDoorsState = setDoors;
+  const windowsState = windows;
+  const setWindowsState = setWindows;
+  const roomsState = rooms;
+  const setRoomsState = setRooms;
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -446,6 +460,15 @@ export default function Scene3D({
             polygon={room.polygon}
             material={room.material || "Maple"}
             highlighted={hoveredRoom === room.id}
+          />
+        ))}
+
+        {/* Ceiling */}
+        {roomsState.map((room) => (
+          <Ceiling3D
+            key={`ceiling-${room.id}`}
+            polygon={room.polygon}
+            wallHeight={wallsState[0]?.dimensions?.height || 3}
           />
         ))}
 

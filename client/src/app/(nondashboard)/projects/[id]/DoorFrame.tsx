@@ -4,13 +4,12 @@ export function DoorFrame({
   door,
   wallLength,
   wallDepth,
-  wallHeight,
   onClick,
 }: {
   door: Door;
   wallLength: number;
   wallDepth: number;
-  wallHeight: number;
+  wallHeight?: number;
   onClick?: () => void;
 }) {
   const {
@@ -23,14 +22,29 @@ export function DoorFrame({
 
   const frameX = offset + width / 2 - wallLength / 2;
   const frameThickness = 0.06;
+  const doorThickness = 0.04;
+  const panelWidth = width - 2 * frameThickness;
+  const panelHeight = height - 0.08;
 
-  const swingAngle = isOpen
-    ? swingDirection === "out"
-      ? -Math.PI / 2
-      : swingDirection === "in"
-        ? Math.PI / 2
-        : 0
-    : 0;
+  // Determine which side the hinge is on (left or right frame)
+  const isLeftHinge = swingDirection === "left";
+  const hingeX = isLeftHinge
+    ? -width / 2 + frameThickness
+    : width / 2 - frameThickness;
+
+  // Calculate local offset for the door panel so it spans the opening when closed
+  const panelLocalX = isLeftHinge ? panelWidth / 2 : -panelWidth / 2;
+
+  // Calculate the swing angle: when open, rotate 90 degrees
+  // If swingDirection is right/out/etc, rotate accordingly
+  let swingAngle = 0;
+  if (isOpen) {
+    if (swingDirection === "in" || swingDirection === "left") {
+      swingAngle = Math.PI / 2;
+    } else {
+      swingAngle = -Math.PI / 2;
+    }
+  }
 
   // the frame group origin stays at the floor (0) now that the wall
   // geometry has been shifted; no need for vertical offsets here.
@@ -55,15 +69,15 @@ export function DoorFrame({
       </mesh>
 
       {/* Door panel */}
-      <group position={[0, height / 2, 0.03]} rotation={[0, swingAngle, 0]}>
+      <group position={[hingeX, height / 2, 0.02]} rotation={[0, swingAngle, 0]}>
         <mesh
-          position={[width / 2 - 0.02, 0, 0]}
+          position={[panelLocalX, 0, 0]}
           onPointerDown={(e) => {
             e.stopPropagation();
             onClick?.();
           }}
         >
-          <boxGeometry args={[0.04, height - 0.08, width - 0.08]} />
+          <boxGeometry args={[panelWidth, panelHeight, doorThickness]} />
           <meshStandardMaterial color={door.color || "#8b5a2b"} />
         </mesh>
       </group>

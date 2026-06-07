@@ -40,10 +40,10 @@ export const createFurniture = async (req: Request, res: Response): Promise<void
 export const updateFurniture = async (req: Request, res: Response): Promise<void> => {
     try {
         const { id } = req.params;
-        const { name, thumbnailUrl, modelUrl } = req.body;
+        const { name, thumbnailUrl, modelUrl, categoryId } = req.body;
         const updatedFurniture = await prisma.furniture.update({
             where: { id: String(id) },
-            data: { name, thumbnailUrl, modelUrl },
+            data: { name, thumbnailUrl, modelUrl, categoryId },
         });
         res.json(updatedFurniture);
     } catch (error: any) {

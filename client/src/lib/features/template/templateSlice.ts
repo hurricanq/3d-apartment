@@ -3,7 +3,7 @@ import axios from "axios";
 import { DesignData } from "@/lib/types/design";
 
 export interface Template {
-  id: number;
+  id: string;
   createdAt: string;
   updatedAt: string;
   name: string;
@@ -54,7 +54,7 @@ export const fetchTemplateById = createAsyncThunk(
 // Create new template
 export const createTemplate = createAsyncThunk(
   "templates/create",
-  async (templateData: Omit<Template, "id" | "createdAt" | "updatedAt">) => {
+  async (templateData: Omit<Template, "createdAt" | "updatedAt">) => {
     const response = await axios.post(API_BASE_URL, templateData);
     return response.data as Template;
   },
@@ -63,7 +63,7 @@ export const createTemplate = createAsyncThunk(
 // Update template
 export const updateTemplate = createAsyncThunk(
   "templates/update",
-  async ({ id, data }: { id: number; data: UpdateTemplateDTO }) => {
+  async ({ id, data }: { id: string; data: UpdateTemplateDTO }) => {
     const response = await axios.put(`${API_BASE_URL}/${id}`, data);
     return response.data as Template;
   },
@@ -72,7 +72,7 @@ export const updateTemplate = createAsyncThunk(
 // Delete template
 export const deleteTemplate = createAsyncThunk(
   "templates/delete",
-  async (id: number) => {
+  async (id: string) => {
     await axios.delete(`${API_BASE_URL}/${id}`);
     return id; // return the deleted template ID
   },
@@ -130,7 +130,7 @@ const templateSlice = createSlice({
       // Delete
       .addCase(
         deleteTemplate.fulfilled,
-        (state, action: PayloadAction<number>) => {
+        (state, action: PayloadAction<string>) => {
           state.templates = state.templates.filter(
             (p) => p.id !== action.payload,
           );

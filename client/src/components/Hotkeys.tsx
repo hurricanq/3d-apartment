@@ -16,6 +16,9 @@ const hotkeysList = [
   { key: "T", action: "Translate Mode" },
   { key: "R", action: "Rotate Mode" },
   { key: "E", action: "Scale Mode" },
+  { key: "Arrow Keys", action: "Translate"},
+  { key: "A & D", action: "Rotate"},
+  { key: "M & N", action: "Scale"},
   { key: "Delete", action: "Delete Object" },
 ];
 

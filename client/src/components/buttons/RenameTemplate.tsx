@@ -17,7 +17,7 @@ import { Button } from "../ui/button";
 import { toast } from "sonner";
 import { Pencil } from "lucide-react";
 
-const RenameTemplate = ({ temId }: { temId: number }) => {
+const RenameTemplate = ({ temId }: { temId: string }) => {
   const dispatch = useDispatch<AppDispatch>();
 
   const [newName, setNewName] = useState("");

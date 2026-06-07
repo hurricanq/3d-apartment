@@ -20,6 +20,7 @@ import {
   ModelData,
 } from "./types";
 import Scene3D from "./Scene3D";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,7 +43,7 @@ import { DesignData } from "@/lib/types/design";
 const FloorPlanPage = () => {
   const { id } = useParams();
   const dispatch = useDispatch<AppDispatch>();
-  const { selectedDesign } = useSelector((state: RootState) => state.designs);
+  const { selectedDesign, loading } = useSelector((state: RootState) => state.designs);
 
   const stageRef = useRef<Konva.Stage>(null);
 
@@ -142,8 +143,31 @@ const FloorPlanPage = () => {
 
   useEffect(() => {
     const detected = detectRooms(walls);
-    setRooms(detected);
-  }, [walls]);
+    setRooms((prevRooms) => {
+      const savedRooms = selectedDesign?.data?.rooms?.[0]?.detectedRooms || [];
+      return detected.map((newRoom) => {
+        const match =
+          prevRooms.find((r) => {
+            const dx = r.centroid.x - newRoom.centroid.x;
+            const dy = r.centroid.y - newRoom.centroid.y;
+            return Math.hypot(dx, dy) < 0.5;
+          }) ||
+          savedRooms.find((r) => {
+            const dx = r.centroid.x - newRoom.centroid.x;
+            const dy = r.centroid.y - newRoom.centroid.y;
+            return Math.hypot(dx, dy) < 0.5;
+          });
+
+        if (match) {
+          return {
+            ...newRoom,
+            material: match.material || "Maple",
+          };
+        }
+        return newRoom;
+      });
+    });
+  }, [walls, selectedDesign]);
 
   const GRID_STEP = 0.25; // meters (25cm)
   const width = 1600;
@@ -457,6 +481,7 @@ const FloorPlanPage = () => {
             width: window.width,
             height: window.height,
             sillHeight: window.sillHeight,
+            color: window.color || "#ffffff",
           })),
 
           doors: doors.map((door) => ({
@@ -466,6 +491,8 @@ const FloorPlanPage = () => {
             width: door.width,
             height: door.height,
             swingDirection: door.swingDirection,
+            color: door.color || "#8b5a2b",
+            isOpen: door.isOpen || false,
           })),
 
           detectedRooms: rooms.map((room) => ({
@@ -536,7 +563,13 @@ const FloorPlanPage = () => {
 
   return (
     <div className="relative min-h-screen">
-      {/* Toolbar */}
+      {loading || !selectedDesign ? (
+        <div className="flex items-center justify-center w-full h-screen bg-black text-white">
+          <LoadingSpinner />
+        </div>
+      ) : (
+        <>
+          {/* Toolbar */}
       <div className="absolute top-18 left-6 z-10 flex gap-2">
         <Button onClick={handleSave}>Save Design</Button>
 
@@ -700,181 +733,191 @@ const FloorPlanPage = () => {
       )}
 
       <div className="w-full h-screen border relative">
-        {viewMode === "2d" &&
-        floorDimensions.width > 0 &&
-        floorDimensions.height > 0 ? (
-          <Stage
-            ref={stageRef}
-            width={width}
-            height={height}
-            scaleX={scale}
-            scaleY={scale}
-            x={position.x}
-            y={position.y}
-            draggable={toolMode === "select"}
-            onDragEnd={(e) => setPosition({ x: e.target.x(), y: e.target.y() })}
-            onWheel={handleWheel}
-            onMouseDown={(e) => {
-              // existing draw-wall logic still runs here
-              handleMouseDown(e);
+        {viewMode === "2d" ? (
+          floorDimensions.width > 0 && floorDimensions.height > 0 ? (
+            <Stage
+              ref={stageRef}
+              width={width}
+              height={height}
+              scaleX={scale}
+              scaleY={scale}
+              x={position.x}
+              y={position.y}
+              draggable={toolMode === "select"}
+              onDragEnd={(e) => setPosition({ x: e.target.x(), y: e.target.y() })}
+              onWheel={handleWheel}
+              onMouseDown={(e) => {
+                // existing draw-wall logic still runs here
+                handleMouseDown(e);
 
-              // deselect wall nd window when clicking empty space
-              if (toolMode === "select" && e.target === e.target.getStage()) {
-                setSelectedWallId(null);
-                setSelectedWindowId(null);
-                setDeleteButtonPos(null);
-              }
-            }}
-            onMouseMove={handleMouseMove}
-          >
-            {/* Grid (non-interactive) */}
-            <Layer listening={false}>
-              <Grid2D
-                width={width}
-                height={height}
-                cellSize={PIXELS_PER_METER}
-              />
-            </Layer>
-
-            <Layer listening={false}>
-              <Rect
-                x={floorX}
-                y={floorY}
-                width={floorDimensions.width * PIXELS_PER_METER}
-                height={floorDimensions.height * PIXELS_PER_METER}
-                fill="#ffffff"
-                stroke="#111"
-                strokeWidth={2}
-              />
-            </Layer>
-
-            {/* Add Dimension Layer here - pass meters, not pixels */}
-            <DimensionLayer
-              floorX={floorX}
-              floorY={floorY}
-              floorWidth={floorDimensions.width}
-              floorHeight={floorDimensions.height}
-              pixelsPerMeter={PIXELS_PER_METER}
-            />
-
-            <Layer listening={false}>
-              {rooms.map((room, i) => {
-                if (!room?.polygon) return null;
-
-                const points = room.polygon.flatMap((p) => [
-                  floorX + p.x * PIXELS_PER_METER,
-                  floorY + p.y * PIXELS_PER_METER,
-                ]);
-
-                return (
-                  <React.Fragment key={room.id}>
-                    <Line
-                      points={points}
-                      closed
-                      fill="rgba(34,197,94,0.15)"
-                      stroke="rgba(34,197,94,0.6)"
-                      strokeWidth={2}
-                    />
-
-                    <Text
-                      x={floorX + room.centroid.x * PIXELS_PER_METER}
-                      y={floorY + room.centroid.y * PIXELS_PER_METER}
-                      text={`${room.area.toFixed(2)} m²`}
-                      fontSize={14}
-                      fill="#065f46"
-                      align="center"
-                      offsetX={30}
-                      offsetY={10}
-                    />
-                  </React.Fragment>
-                );
-              })}
-            </Layer>
-
-            {/* Render rooms */}
-            <Layer>
-              <WallLayer
-                walls={walls}
-                pixelsPerMeter={PIXELS_PER_METER}
-                floorX={floorX}
-                floorY={floorY}
-                toolMode={toolMode}
-                hoveredWallId={hoveredWallId}
-                selectedWallId={selectedWallId}
-                onHoverWall={(wallId) => {
-                  setHoveredWallId(wallId);
-                }}
-                onSelectWall={(wallId, screenPos) => {
-                  setSelectedWallId(wallId);
-                  setDeleteButtonPos(screenPos);
-                }}
-              />
-
-              {/* Preview wall */}
-              {toolMode === "draw-wall" && drawingStart && previewEnd && (
-                <Line
-                  points={[
-                    floorX + drawingStart.x * PIXELS_PER_METER,
-                    floorY + drawingStart.y * PIXELS_PER_METER,
-                    floorX + previewEnd.x * PIXELS_PER_METER,
-                    floorY + previewEnd.y * PIXELS_PER_METER,
-                  ]}
-                  stroke="#2563eb"
-                  strokeWidth={0.2 * PIXELS_PER_METER}
-                  dash={[8, 4]}
+                // deselect wall nd window when clicking empty space
+                if (toolMode === "select" && e.target === e.target.getStage()) {
+                  setSelectedWallId(null);
+                  setSelectedWindowId(null);
+                  setDeleteButtonPos(null);
+                }
+              }}
+              onMouseMove={handleMouseMove}
+            >
+              {/* Grid (non-interactive) */}
+              <Layer listening={false}>
+                <Grid2D
+                  width={width}
+                  height={height}
+                  cellSize={PIXELS_PER_METER}
                 />
-              )}
-            </Layer>
+              </Layer>
 
-            <Layer>
-              <WindowLayer
-                windows={windows}
-                walls={walls}
-                scale={PIXELS_PER_METER}
+              <Layer listening={false}>
+                <Rect
+                  x={floorX}
+                  y={floorY}
+                  width={floorDimensions.width * PIXELS_PER_METER}
+                  height={floorDimensions.height * PIXELS_PER_METER}
+                  fill="#ffffff"
+                  stroke="#111"
+                  strokeWidth={2}
+                />
+              </Layer>
+
+              {/* Add Dimension Layer here - pass meters, not pixels */}
+              <DimensionLayer
                 floorX={floorX}
                 floorY={floorY}
-                preview={windowPreview}
-                onUpdateWindow={updateWindow}
-                toolMode={toolMode}
-                selectedWindowId={selectedWindowId}
-                onSelectWindow={(id, pos) => {
-                  setSelectedWindowId(id);
-                  setSelectedWallId(null); // deselect wall
-                  setDeleteButtonPos(pos);
-                }}
+                floorWidth={floorDimensions.width}
+                floorHeight={floorDimensions.height}
+                pixelsPerMeter={PIXELS_PER_METER}
               />
-            </Layer>
 
-            <Layer>
-              <DoorLayer
-                doors={doors}
-                walls={walls}
-                scale={PIXELS_PER_METER}
-                floorX={floorX}
-                floorY={floorY}
-                preview={doorPreview}
-                onUpdateDoor={updateDoor}
-                toolMode={toolMode}
-                selectedDoorId={selectedDoorId}
-                onSelectDoor={(id, pos) => {
-                  setSelectedDoorId(id);
-                  setSelectedWallId(null); // deselect wall
-                  setDeleteButtonPos(pos);
-                }}
-              />
-            </Layer>
-          </Stage>
+              <Layer listening={false}>
+                {rooms.map((room, i) => {
+                  if (!room?.polygon) return null;
+
+                  const points = room.polygon.flatMap((p) => [
+                    floorX + p.x * PIXELS_PER_METER,
+                    floorY + p.y * PIXELS_PER_METER,
+                  ]);
+
+                  return (
+                    <React.Fragment key={room.id}>
+                      <Line
+                        points={points}
+                        closed
+                        fill="rgba(34,197,94,0.15)"
+                        stroke="rgba(34,197,94,0.6)"
+                        strokeWidth={2}
+                      />
+
+                      <Text
+                        x={floorX + room.centroid.x * PIXELS_PER_METER}
+                        y={floorY + room.centroid.y * PIXELS_PER_METER}
+                        text={`${room.area.toFixed(2)} m²`}
+                        fontSize={14}
+                        fill="#065f46"
+                        align="center"
+                        offsetX={30}
+                        offsetY={10}
+                      />
+                    </React.Fragment>
+                  );
+                })}
+              </Layer>
+
+              {/* Render rooms */}
+              <Layer>
+                <WallLayer
+                  walls={walls}
+                  pixelsPerMeter={PIXELS_PER_METER}
+                  floorX={floorX}
+                  floorY={floorY}
+                  toolMode={toolMode}
+                  hoveredWallId={hoveredWallId}
+                  selectedWallId={selectedWallId}
+                  onHoverWall={(wallId) => {
+                    setHoveredWallId(wallId);
+                  }}
+                  onSelectWall={(wallId, screenPos) => {
+                    setSelectedWallId(wallId);
+                    setDeleteButtonPos(screenPos);
+                  }}
+                />
+
+                {/* Preview wall */}
+                {toolMode === "draw-wall" && drawingStart && previewEnd && (
+                  <Line
+                    points={[
+                      floorX + drawingStart.x * PIXELS_PER_METER,
+                      floorY + drawingStart.y * PIXELS_PER_METER,
+                      floorX + previewEnd.x * PIXELS_PER_METER,
+                      floorY + previewEnd.y * PIXELS_PER_METER,
+                    ]}
+                    stroke="#2563eb"
+                    strokeWidth={0.2 * PIXELS_PER_METER}
+                    dash={[8, 4]}
+                  />
+                )}
+              </Layer>
+
+              <Layer>
+                <WindowLayer
+                  windows={windows}
+                  walls={walls}
+                  scale={PIXELS_PER_METER}
+                  floorX={floorX}
+                  floorY={floorY}
+                  preview={windowPreview}
+                  onUpdateWindow={updateWindow}
+                  toolMode={toolMode}
+                  selectedWindowId={selectedWindowId}
+                  onSelectWindow={(id, pos) => {
+                    setSelectedWindowId(id);
+                    setSelectedWallId(null); // deselect wall
+                    setDeleteButtonPos(pos);
+                  }}
+                />
+              </Layer>
+
+              <Layer>
+                <DoorLayer
+                  doors={doors}
+                  walls={walls}
+                  scale={PIXELS_PER_METER}
+                  floorX={floorX}
+                  floorY={floorY}
+                  preview={doorPreview}
+                  onUpdateDoor={updateDoor}
+                  toolMode={toolMode}
+                  selectedDoorId={selectedDoorId}
+                  onSelectDoor={(id, pos) => {
+                    setSelectedDoorId(id);
+                    setSelectedWallId(null); // deselect wall
+                    setDeleteButtonPos(pos);
+                  }}
+                />
+              </Layer>
+            </Stage>
+          ) : (
+            <div className="flex items-center justify-center w-full h-full bg-black text-white">
+              <LoadingSpinner />
+            </div>
+          )
         ) : (
           <Scene3D
             rooms={rooms}
+            setRooms={setRooms}
             walls={walls || []}
+            setWalls={setWalls}
             windows={windows || []}
+            setWindows={setWindows}
             doors={doors}
+            setDoors={setDoors}
             models={models}
             setModels={setModels}
           />
         )}
       </div>
+        </>
+      )}
     </div>
   );
 };

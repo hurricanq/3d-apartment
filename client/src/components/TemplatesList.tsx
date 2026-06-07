@@ -6,22 +6,11 @@ import { useUser } from "@clerk/nextjs";
 
 import { useDispatch, useSelector } from "react-redux";
 import { RootState, AppDispatch } from "../lib/store";
-import { fetchTemplates } from "../lib/features/template/templateSlice";
+import { fetchTemplates, Template } from "../lib/features/template/templateSlice";
 import { createDesign } from "../lib/features/design/designSlice";
 
 import LoadingSpinner from "./LoadingSpinner";
 import { Button } from "./ui/button";
-
-import { DesignData } from "@/lib/types/design";
-
-interface Template {
-  id: number;
-  createdAt: string;
-  updatedAt: string;
-  name: string;
-  description: string;
-  data: DesignData;
-}
 
 const TemplatesList = () => {
   const dispatch = useDispatch<AppDispatch>();

@@ -20,7 +20,7 @@ interface DesignState {
 
 export interface CreateDesignDTO {
   name: string;
-  templateId: number;
+  templateId: string;
   userId: string;
 }
 
